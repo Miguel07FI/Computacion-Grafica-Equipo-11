@@ -1,0 +1,14 @@
+# Blender 4.0.0 MTL File: 'None'
+# www.blender.org
+
+newmtl tripo_mat_6b109b73-3709-444c-8eb8-9b6703a81ae1
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd Diffuse_Bake.jpg
+map_Ns Roughness.jpg
+map_refl Metallic.jpg
+map_Bump -bm 1.000000 Normal_Bake.jpg
