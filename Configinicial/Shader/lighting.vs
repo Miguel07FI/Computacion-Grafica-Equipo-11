@@ -10,11 +10,17 @@ out vec2 TexCoords;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform float explosionFactor;
 
 void main()
 {
-    gl_Position = projection * view *  model * vec4(position, 1.0f);
-    FragPos = vec3(model * vec4(position, 1.0f));
+    vec3 explodedPosition = position + normal * explosionFactor;
+
+    // Usa la posición explosionada para todo
+    vec4 worldPosition = model * vec4(explodedPosition, 1.0);
+    FragPos = vec3(worldPosition);
+    gl_Position = projection * view * worldPosition;
+
     Normal = mat3(transpose(inverse(model))) * normal;
     TexCoords = texCoords;
 }

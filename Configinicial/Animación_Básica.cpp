@@ -1,8 +1,10 @@
-/*
+Ôªø/*
 Hernandez Ramirez Miguel Angel
-Previo Animacion Basica
-2 de abril del 2025
+Osorio Angeles Rodrigo Jafet
+Proyecto 1 Equipo 11
+11 de abril del 2025
 319044618
+318008893
 */
 #include <iostream>
 #include <cmath>
@@ -49,17 +51,34 @@ bool firstMouse = true;
 // Light attributes
 glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 bool active;
+bool explosionActive = false;
 
 
-float posBallY = 0.0f;  // PosiciÛn inicial de la pelota en Y
-float velocidad = 2.0f;  // Velocidad de la animaciÛn (puedes ajustarla)
-bool moviendoArriba = true;  // Variable para controlar la direcciÛn de la pelota
-// Control de la animaciÛn
-bool animacionActivada = false;  // AnimaciÛn inicialmente desactivada
+
+float posBallY = 0.0f;  // Posici√≥n inicial de la pelota en Y
+float velocidad = 2.0f;  // Velocidad de la animaci√≥n (puedes ajustarla)
+bool moviendoArriba = true;  // Variable para controlar la direcci√≥n de la pelota
+// Control de la animaci√≥n
+bool animacionActivada = false;  // Animaci√≥n inicialmente desactivada
 
 
 float limiteInferior = 0.0f;  
 float limiteSuperior = 1.7;   
+float explosionFactor = 0.0f;
+
+float implosionFactor = 0.0f;
+bool implosionActive = false;
+
+// Control de visibilidad y animaci√≥n de modelos
+bool model1Visible = true;
+bool model2Visible = false;
+bool model2Appearing = false;
+float model2ScaleFactor = 0.0f;
+float model2Rotation = 0.0f;
+float model2TargetRotation = 1080.0f; // 3 vueltas completas
+
+
+
 
 // Positions of the point lights
 glm::vec3 pointLightPositions[] = {
@@ -121,6 +140,10 @@ float rotBall = 0;
 bool AnimBall = false;
 
 
+
+
+
+
 // Deltatime
 GLfloat deltaTime = 0.0f;	// Time between current frame and last frame
 GLfloat lastFrame = 0.0f;  	// Time of last frame
@@ -176,9 +199,10 @@ int main()
 	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
 	
 	//models
-	Model Dog((char*)"Models/RedDog.obj");
-	Model Piso((char*)"Models/piso.obj");
-	Model Ball((char*)"Models/ball.obj");
+	Model Com((char*)"Models/Com/1.obj");
+	Model Com2((char*)"Models/Comp2/2.obj");
+
+
 
 
 
@@ -296,27 +320,49 @@ int main()
 
 	
 		
-		//Carga de modelo 
-        view = camera.GetViewMatrix();	
-		model = glm::mat4(1);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		Piso.Draw(lightingShader);
 
-		model = glm::mat4(1);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+
+		
+
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); // Ahora s√≠ la mandas correctamente
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), explosionFactor);
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-		Dog.Draw(lightingShader);
 
-		model = glm::mat4(1);
-		glEnable(GL_BLEND);//Avtiva la funcionalidad para trabajar el canal alfa
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 1);
-		model = glm::translate(model, glm::vec3(0.0f, posBallY, 0.0f));  // Movimiento oscilante
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-	    Ball.Draw(lightingShader); 
-		glDisable(GL_BLEND);  //Desactiva el canal alfa 
-		glBindVertexArray(0);
+		// Modelo original (explosi√≥n)
+		if (model1Visible && explosionFactor < 3.0f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			explodedModel = glm::scale(explodedModel, glm::vec3(1.0f - explosionFactor / 3.0f));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
+			Com.Draw(lightingShader);
+
+		}
+
+		
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::translate(model2, glm::vec3(0.0f, 0.0f, 0.0f));
+
+			// Aplica rotaci√≥n mientras aparece
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+			Com2.Draw(lightingShader);
+		}
+
+
+
+
+		
+
+
+		
 	
 
 		// Also draw the lamp object, again binding the appropriate shader
@@ -423,7 +469,7 @@ void DoMovement()
 // Is called whenever a key is pressed/released via GLFW
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (GLFW_KEY_ESCAPE == key && GLFW_PRESS == action)
+	if (GLFW_KEY_ESCAPE == key && action == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	}
@@ -431,45 +477,95 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	if (key >= 0 && key < 1024)
 	{
 		if (action == GLFW_PRESS)
-		{
 			keys[key] = true;
-		}
 		else if (action == GLFW_RELEASE)
-		{
 			keys[key] = false;
-		}
 	}
 
-	// Activar o desactivar la animaciÛn con la tecla "N"
-	if (keys[GLFW_KEY_N])
+	// üí• Explosi√≥n paso a paso con 'N'
+	if (key == GLFW_KEY_N && action == GLFW_PRESS)
 	{
-		animacionActivada = !animacionActivada;  // Alternar el estado de la animaciÛn
+		explosionActive = true; // 
 	}
+
+
+	// üßØ Reversi√≥n con 'M'
+	if (key == GLFW_KEY_M && action == GLFW_PRESS)
+	{
+		explosionFactor = 0.0f;
+		implosionFactor = 0.0f;
+
+		explosionActive = false;
+		implosionActive = false;
+
+		model1Visible = true;
+		model2Visible = false;
+	}
+
+	
+
+
+
+
 }
+
 
 void Animation() {
-	// Verificar si la animaciÛn est· activada
+	// Animaci√≥n vertical de pelota (si la necesitas)
 	if (animacionActivada)
 	{
-		// Cambiar la direcciÛn de la pelota cuando alcanza los lÌmites
-		if (posBallY >= limiteSuperior) {
-			moviendoArriba = false;  // La pelota se mover· hacia abajo
+		if (posBallY >= limiteSuperior) moviendoArriba = false;
+		if (posBallY <= limiteInferior) moviendoArriba = true;
+
+		if (moviendoArriba) posBallY += velocidad * deltaTime;
+		else posBallY -= velocidad * deltaTime;
+	}
+
+	// Fase 1: Explosi√≥n modelo 1
+	if (explosionActive)
+	{
+		explosionFactor += 0.02f;
+		if (explosionFactor >= 3.0f)
+		{
+			explosionFactor = 3.0f;
+			explosionActive = false;
+			model1Visible = false;
+
+			// Inicia aparici√≥n del modelo 2
+			model2Appearing = true;
+			model2ScaleFactor = 0.0f;
+			model2Rotation = 0.0f;
+			model2TargetRotation = 1080.0f;
+			model2Visible = true;
 		}
-		if (posBallY <= limiteInferior) {
-			moviendoArriba = true;  // La pelota se mover· hacia arriba
+	}
+
+	// Fase 2: Aparici√≥n modelo 2 (escala + rotaci√≥n)
+	if (model2Appearing)
+	{
+		if (model2ScaleFactor < 1.2f)
+		{
+			model2ScaleFactor += deltaTime * 1.5f;
+			if (model2ScaleFactor > 1.2f)
+				model2ScaleFactor = 1.2f;
 		}
 
-		// Mover la pelota hacia arriba o hacia abajo
-		if (moviendoArriba) {
-			posBallY += velocidad * deltaTime;  // Mover hacia arriba
+		if (model2Rotation < model2TargetRotation)
+		{
+			model2Rotation += deltaTime * 360.0f;
+			if (model2Rotation >= model2TargetRotation)
+			{
+				model2Rotation = 0.0f; // Alinea a 0¬∞
+				model2Appearing = false;
+			}
 		}
-		else {
-			posBallY -= velocidad * deltaTime;  // Mover hacia abajo
-		}
-
-		
 	}
 }
+
+
+
+
+
 
 
 void MouseCallback(GLFWwindow *window, double xPos, double yPos)
