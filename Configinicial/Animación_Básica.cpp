@@ -77,6 +77,9 @@ float model2ScaleFactor = 0.0f;
 float model2Rotation = 0.0f;
 float model2TargetRotation = 1080.0f; // 3 vueltas completas
 
+const float escalaX = 2.0f;
+const float escalaY = 2.6f;
+const float escalaZ = 3.0f;
 
 
 
@@ -201,6 +204,7 @@ int main()
 	//models
 	Model Com((char*)"Models/Com/1.obj");
 	Model Com2((char*)"Models/Comp2/2.obj");
+	Model me((char*)"Models/Mes/me.obj");
 
 
 
@@ -329,17 +333,31 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), explosionFactor);
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
 
-		// Modelo original (explosión)
-		if (model1Visible && explosionFactor < 3.0f)
+
+
+
+
+
+
+
+		// Dibujo de monitor con su cambio
+		if (model1Visible && explosionFactor < 1.7f)
 		{
 			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			// 🔁 TRUCO: traslada hacia arriba antes de escalar, y regresa después para simular explosión desde la base
+			float baseOffset = 0.8f; // Ajusta este valor según el punto base de tu modelo
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, baseOffset, 0.0f));
+			explodedModel = glm::scale(explodedModel, glm::vec3(1.0f - explosionFactor / 1.7f));
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, -baseOffset, 0.0f));
+
+			// Rotación fija del modelo
 			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-			explodedModel = glm::scale(explodedModel, glm::vec3(1.0f - explosionFactor / 3.0f));
+
+			// Enviar al shader y dibujar
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
 			Com.Draw(lightingShader);
-
 		}
-
 		
 		if (model2Visible)
 		{
@@ -356,6 +374,67 @@ int main()
 			Com2.Draw(lightingShader);
 		}
 
+		
+		
+		
+		// Dibujo segundo monitor con su cambio
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			// 🔁 Explosión desde la base hacia arriba, sin colapsar hacia el centro
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f; // base original del modelo
+			float verticalCompensate = baseOffset * (1.0f - explosionScale); // lo que sube
+
+			// Coloca el modelo más arriba al escalar, para que no traspase el piso
+			explodedModel = glm::translate(explodedModel, glm::vec3(-1.4f, verticalCompensate, 0.0f));
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale, explosionScale, explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			// Enviar al shader y dibujar
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
+			Com.Draw(lightingShader);
+		}
+
+
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::translate(model2, glm::vec3(-1.4f, 0.0f, 0.0f));
+
+			// Aplica rotación mientras aparece
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+			Com2.Draw(lightingShader);
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		// Dibujo de la mesa
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-0.7f, -0.92f, 0.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(escalaX, escalaY, escalaZ));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
 
 
 
@@ -524,10 +603,10 @@ void Animation() {
 	// Fase 1: Explosión modelo 1
 	if (explosionActive)
 	{
-		explosionFactor += 0.02f;
-		if (explosionFactor >= 3.0f)
+		explosionFactor += 0.008f;
+		if (explosionFactor >= 1.7f)
 		{
-			explosionFactor = 3.0f;
+			explosionFactor = 1.7f;
 			explosionActive = false;
 			model1Visible = false;
 
