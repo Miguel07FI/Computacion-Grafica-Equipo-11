@@ -1,2 +1,2 @@
 # CompuGrafica
- Curso de Computacion Graficva
+ Curso de Computacion Grafica
