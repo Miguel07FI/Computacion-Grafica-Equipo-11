@@ -1,10 +1,12 @@
 ﻿/*
 Hernandez Ramirez Miguel Angel
 Osorio Angeles Rodrigo Jafet
+Del Razo Sanchez Diego Adrian
 Proyecto 1 Equipo 11
 11 de abril del 2025
 319044618
 318008893
+319114939
 */
 #include <iostream>
 #include <cmath>
