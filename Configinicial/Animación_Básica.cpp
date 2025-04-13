@@ -78,8 +78,19 @@ float model2Rotation = 0.0f;
 float model2TargetRotation = 1080.0f; // 3 vueltas completas
 
 const float escalaX = 2.0f;
-const float escalaY = 2.6f;
-const float escalaZ = 3.0f;
+const float escalaY = 3.2f;
+const float escalaZ = 4.0f;
+
+// Para modelo 'ga'
+bool gaExplosionActive = false;
+bool gaVisible = true;
+float gaExplosionFactor = 1.0f;
+bool gaInflating = false;
+bool gaContracting = false;
+
+
+
+
 
 
 
@@ -205,6 +216,7 @@ int main()
 	Model Com((char*)"Models/Com/1.obj");
 	Model Com2((char*)"Models/Comp2/2.obj");
 	Model me((char*)"Models/Mes/me.obj");
+	Model ga((char*)"Models/Ga/ga.obj");
 
 
 
@@ -388,7 +400,7 @@ int main()
 			float verticalCompensate = baseOffset * (1.0f - explosionScale); // lo que sube
 
 			// Coloca el modelo más arriba al escalar, para que no traspase el piso
-			explodedModel = glm::translate(explodedModel, glm::vec3(-1.4f, verticalCompensate, 0.0f));
+			explodedModel = glm::translate(explodedModel, glm::vec3(-1.9f, verticalCompensate, 0.0f));
 			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale, explosionScale, explosionScale));
 			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
@@ -401,7 +413,79 @@ int main()
 		if (model2Visible)
 		{
 			glm::mat4 model2 = glm::mat4(1.0f);
-			model2 = glm::translate(model2, glm::vec3(-1.4f, 0.0f, 0.0f));
+			model2 = glm::translate(model2, glm::vec3(-1.9f, 0.0f, 0.0f));
+
+			// Aplica rotación mientras aparece
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+			Com2.Draw(lightingShader);
+		}
+
+		// Dibujo tercer monitor con su cambio
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			// 🔁 Explosión desde la base hacia arriba, sin colapsar hacia el centro
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f; // base original del modelo
+			float verticalCompensate = baseOffset * (1.0f - explosionScale); // lo que sube
+
+			// Coloca el modelo más arriba al escalar, para que no traspase el piso
+			explodedModel = glm::translate(explodedModel, glm::vec3(1.9f, verticalCompensate, 0.0f));
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale, explosionScale, explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			// Enviar al shader y dibujar
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
+			Com.Draw(lightingShader);
+		}
+
+
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::translate(model2, glm::vec3(1.9f, 0.0f, 0.0f));
+
+			// Aplica rotación mientras aparece
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
+			Com2.Draw(lightingShader);
+		}
+
+		// Dibujo cuarto monitor con su cambio
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			// 🔁 Explosión desde la base hacia arriba, sin colapsar hacia el centro
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f; // base original del modelo
+			float verticalCompensate = baseOffset * (1.0f - explosionScale); // lo que sube
+
+			// Coloca el modelo más arriba al escalar, para que no traspase el piso
+			explodedModel = glm::translate(explodedModel, glm::vec3(3.9f, verticalCompensate, 0.0f));
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale, explosionScale, explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			// Enviar al shader y dibujar
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
+			Com.Draw(lightingShader);
+		}
+
+
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::translate(model2, glm::vec3(3.9f, 0.0f, 0.0f));
 
 			// Aplica rotación mientras aparece
 			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -425,7 +509,7 @@ int main()
 		// Dibujo de la mesa
 		{
 			glm::mat4 modelMe = glm::mat4(1.0f);
-			modelMe = glm::translate(modelMe, glm::vec3(-0.7f, -0.92f, 0.0f)); // puedes ajustar la posición
+			modelMe = glm::translate(modelMe, glm::vec3(-0.7f, -1.05f, 0.0f)); // puedes ajustar la posición
 			modelMe = glm::rotate(modelMe, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
 			modelMe = glm::scale(modelMe, glm::vec3(escalaX, escalaY, escalaZ));
 
@@ -435,6 +519,115 @@ int main()
 
 			me.Draw(lightingShader);
 		}
+
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(3.05f, -1.05f, 0.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(escalaX, escalaY, escalaZ));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+
+
+
+
+		
+//Dibujamos la PC vieja
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
+
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(-1.0f, 0.09f + verticalCompensate, 0.0f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+
+
+//Dibujamos la PC vieja
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
+
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(0.98f, 0.09f + verticalCompensate, 0.0f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+
+// Dibujamos la PC vieja
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
+
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(2.98f, 0.09f + verticalCompensate, 0.0f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+
+// Dibujamos la PC vieja
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
+
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(4.4f, -1.15f + verticalCompensate, 0.2f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+
+
+
 
 
 
@@ -580,6 +773,25 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		model1Visible = true;
 		model2Visible = false;
 	}
+	if (key == GLFW_KEY_B && action == GLFW_PRESS)
+	{
+		gaExplosionActive = true;
+		gaInflating = true;
+		gaContracting = false;
+		gaExplosionFactor = 1.0f;
+		gaVisible = true;
+	}
+
+
+	if (key == GLFW_KEY_V && action == GLFW_PRESS)
+	{
+		gaExplosionActive = false;
+		gaExplosionFactor = 0.0f;
+		gaVisible = true;
+	}
+
+
+
 
 	
 
@@ -639,6 +851,36 @@ void Animation() {
 			}
 		}
 	}
+	if (gaExplosionActive)
+	{
+		// Fase 1: Inflado inicial
+		if (gaInflating)
+		{
+			gaExplosionFactor += deltaTime * 1.5f; // Inflado rápido
+			if (gaExplosionFactor >= 2.0f)
+			{
+				gaExplosionFactor = 2.0f;
+				gaInflating = false;
+				gaContracting = true;
+			}
+		}
+		// Fase 2: Contracción
+		else if (gaContracting)
+		{
+			gaExplosionFactor -= deltaTime * 3.0f;
+			if (gaExplosionFactor <= 0.0f)
+			{
+				gaExplosionFactor = 0.0f;
+				gaExplosionActive = false;
+				gaContracting = false;
+				gaVisible = false;
+			}
+		}
+	}
+
+
+
+
 }
 
 
