@@ -155,6 +155,15 @@ float prScaleFactor = 0.0f;
 float prRotation = 0.0f;
 float prOffsetX = 0.0f;
 
+// Variables para modelo 'fu'
+bool fuVisible = false;
+bool fuAnimActive = false;
+bool fuInPhase1 = false, fuInPhase2 = false;
+float fuScaleFactor = 0.0f;
+float fuRotation = 0.0f;
+float fuOffsetX = 0.0f;
+float fuTargetRotation = 180.0f;
+
 
 // Positions of the point lights
 glm::vec3 pointLightPositions[] = {
@@ -284,6 +293,7 @@ int main()
 	Model gr((char*)"Models/gr/gr.obj");
 	Model ram((char*)"Models/ram/ram.obj");
 	Model pr((char*)"Models/pr/pr.obj");
+	Model fu((char*)"Models/fu/fu.obj");
 
 
 
@@ -776,6 +786,24 @@ if (prVisible)
 	pr.Draw(lightingShader);
 }
 
+if (fuVisible)
+{
+	glm::mat4 modelFU = glm::mat4(1.0f);
+	modelFU = glm::translate(modelFU, glm::vec3(fuOffsetX - 0.2f, -0.26f, -0.3f));
+	modelFU = glm::rotate(modelFU, glm::radians(fuRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelFU = glm::rotate(modelFU, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelFU = glm::rotate(modelFU, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	modelFU = glm::rotate(modelFU, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	modelFU = glm::scale(modelFU, glm::vec3(0.35f * fuScaleFactor));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelFU));
+
+	fu.Draw(lightingShader);
+}
+
+
 
 		
 
@@ -1210,6 +1238,40 @@ void Animation() {
 				prOffsetX = 0.0f;
 				prAnimActive = false;
 				prInPhase2 = false;
+
+				// Activar modelo FU
+				fuVisible = true;
+				fuScaleFactor = 0.0f;
+				fuRotation = 0.0f;
+				fuOffsetX = -1.0f;
+				fuAnimActive = true;
+				fuInPhase1 = true;
+			}
+		}
+	}
+	if (fuAnimActive)
+	{
+		if (fuInPhase1)
+		{
+			fuScaleFactor += deltaTime * 1.5f;
+			if (fuScaleFactor > 1.0f) fuScaleFactor = 1.0f;
+
+			fuRotation += deltaTime * 180.0f;
+			if (fuRotation >= fuTargetRotation)
+			{
+				fuRotation = fuTargetRotation;
+				fuInPhase1 = false;
+				fuInPhase2 = true;
+			}
+		}
+		else if (fuInPhase2)
+		{
+			fuOffsetX += deltaTime * 1.0f;
+			if (fuOffsetX >= 0.0f)
+			{
+				fuOffsetX = 0.0f;
+				fuAnimActive = false;
+				fuInPhase2 = false;
 			}
 		}
 	}
