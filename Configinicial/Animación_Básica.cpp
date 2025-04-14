@@ -165,6 +165,7 @@ float fuOffsetX = 0.0f;
 float fuTargetRotation = 180.0f;
 
 
+
 // Positions of the point lights
 glm::vec3 pointLightPositions[] = {
 	glm::vec3(0.0f,2.0f, 0.0f),
@@ -172,6 +173,9 @@ glm::vec3 pointLightPositions[] = {
 	glm::vec3(0.0f,0.0f,  0.0f),
 	glm::vec3(0.0f,0.0f, 0.0f)
 };
+
+glm::vec3 ganTranslation(4.0f, 0.0f, 0.0f);  // Traslación general de GAN
+
 
 float vertices[] = {
 	 -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -706,10 +710,13 @@ int main()
 
 
 
+// ... (todo el código anterior se mantiene igual)
+
+
 if (ganVisible)
 {
 	glm::mat4 modelGan = glm::mat4(1.0f);
-	modelGan = glm::translate(modelGan, glm::vec3(0.0f, 0.0f, 0.0f)); // Ajusta posición
+	modelGan = glm::translate(modelGan, glm::vec3(4.0f, 0.0f, 0.0f)); // Ajusta posición
 	modelGan = glm::rotate(modelGan, glm::radians(ganRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelGan = glm::scale(modelGan, glm::vec3(ganScaleFactor));
 
@@ -722,7 +729,7 @@ if (ganVisible)
 if (gVisible)
 {
 	glm::mat4 modelG = glm::mat4(1.0f);
-	modelG = glm::translate(modelG, glm::vec3(gOffsetX, 0.0f, 0.0f)); // Movimiento en -x si aplica
+	modelG = glm::translate(modelG, ganTranslation + glm::vec3(gOffsetX, 0.0f, 0.0f));
 	modelG = glm::rotate(modelG, glm::radians(gRotation), glm::vec3(1.0f, 0.0f, 0.0f));
 	modelG = glm::rotate(modelG, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 	modelG = glm::scale(modelG, glm::vec3(gScaleFactor * 0.7f)); // Escala progresiva
@@ -738,7 +745,7 @@ if (gVisible)
 if (grVisible)
 {
 	glm::mat4 modelGR = glm::mat4(1.0f);
-	modelGR = glm::translate(modelGR, glm::vec3(grOffsetX - 0.05f, 0.0f, -0.15f));
+	modelGR = glm::translate(modelGR, ganTranslation + glm::vec3(grOffsetX - 0.05f, 0.0f, -0.15f));
 	modelGR = glm::rotate(modelGR, glm::radians(grRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelGR = glm::rotate(modelGR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelGR = glm::rotate(modelGR, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -756,7 +763,7 @@ if (grVisible)
 if (ramVisible)
 {
 	glm::mat4 modelRAM = glm::mat4(1.0f);
-	modelRAM = glm::translate(modelRAM, glm::vec3(ramOffsetX - 0.02f, -0.25f, -0.06f));
+	modelRAM = glm::translate(modelRAM, ganTranslation + glm::vec3(ramOffsetX - 0.02f, -0.25f, -0.06f));
 	modelRAM = glm::rotate(modelRAM, glm::radians(ramRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelRAM = glm::rotate(modelRAM, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelRAM = glm::rotate(modelRAM, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -773,7 +780,7 @@ if (ramVisible)
 if (prVisible)
 {
 	glm::mat4 modelPR = glm::mat4(1.0f);
-	modelPR = glm::translate(modelPR, glm::vec3(prOffsetX + 0.012f, -0.19f, -0.18f));
+	modelPR = glm::translate(modelPR, ganTranslation + glm::vec3(prOffsetX + 0.012f, -0.19f, -0.18f));
 	modelPR = glm::rotate(modelPR, glm::radians(prRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelPR = glm::rotate(modelPR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelPR = glm::rotate(modelPR, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -789,7 +796,7 @@ if (prVisible)
 if (fuVisible)
 {
 	glm::mat4 modelFU = glm::mat4(1.0f);
-	modelFU = glm::translate(modelFU, glm::vec3(fuOffsetX - 0.2f, -0.26f, -0.3f));
+	modelFU = glm::translate(modelFU, ganTranslation + glm::vec3(fuOffsetX - 0.2f, -0.26f, -0.3f));
 	modelFU = glm::rotate(modelFU, glm::radians(fuRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelFU = glm::rotate(modelFU, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelFU = glm::rotate(modelFU, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -802,6 +809,8 @@ if (fuVisible)
 
 	fu.Draw(lightingShader);
 }
+
+
 
 
 
