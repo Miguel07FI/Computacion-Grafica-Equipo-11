@@ -148,6 +148,13 @@ float ramRotation = 0.0f;
 float ramTargetRotation = 360.0f;
 
 
+bool prVisible = false;
+bool prAnimActive = false;
+bool prInPhase1 = false, prInPhase2 = false;
+float prScaleFactor = 0.0f;
+float prRotation = 0.0f;
+float prOffsetX = 0.0f;
+
 
 // Positions of the point lights
 glm::vec3 pointLightPositions[] = {
@@ -276,6 +283,8 @@ int main()
 	Model g((char*)"Models/Graf/g.obj");
 	Model gr((char*)"Models/gr/gr.obj");
 	Model ram((char*)"Models/ram/ram.obj");
+	Model pr((char*)"Models/pr/pr.obj");
+
 
 
 
@@ -737,7 +746,7 @@ if (grVisible)
 if (ramVisible)
 {
 	glm::mat4 modelRAM = glm::mat4(1.0f);
-	modelRAM = glm::translate(modelRAM, glm::vec3(ramOffsetX - 0.02f, -0.25f, 0.1f));
+	modelRAM = glm::translate(modelRAM, glm::vec3(ramOffsetX - 0.02f, -0.25f, -0.06f));
 	modelRAM = glm::rotate(modelRAM, glm::radians(ramRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelRAM = glm::rotate(modelRAM, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelRAM = glm::rotate(modelRAM, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -751,6 +760,21 @@ if (ramVisible)
 	ram.Draw(lightingShader);
 }
 
+if (prVisible)
+{
+	glm::mat4 modelPR = glm::mat4(1.0f);
+	modelPR = glm::translate(modelPR, glm::vec3(prOffsetX + 0.012f, -0.19f, -0.18f));
+	modelPR = glm::rotate(modelPR, glm::radians(prRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelPR = glm::rotate(modelPR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	modelPR = glm::rotate(modelPR, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	modelPR = glm::scale(modelPR, glm::vec3(0.07f * prScaleFactor));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPR));
+
+	pr.Draw(lightingShader);
+}
 
 
 		
@@ -1154,10 +1178,42 @@ void Animation() {
 				ramAnimActive = false;
 				ramInPhase2 = false;
 
-				animacionXCompleta = true;
+				prVisible = true;
+				prScaleFactor = 0.0f;
+				prRotation = 0.0f;
+				prOffsetX = -1.0f;
+				prAnimActive = true;
+				prInPhase1 = true;
 			}
 		}
 	}
+	if (prAnimActive)
+	{
+		if (prInPhase1)
+		{
+			prScaleFactor += deltaTime * 1.5f;
+			if (prScaleFactor > 1.0f) prScaleFactor = 1.0f;
+
+			prRotation += deltaTime * 180.0f;
+			if (prRotation >= 360.0f)
+			{
+				prRotation = 360.0f;
+				prInPhase1 = false;
+				prInPhase2 = true;
+			}
+		}
+		else if (prInPhase2)
+		{
+			prOffsetX += deltaTime * 1.0f;
+			if (prOffsetX >= 0.0f)
+			{
+				prOffsetX = 0.0f;
+				prAnimActive = false;
+				prInPhase2 = false;
+			}
+		}
+	}
+
 }
 
 
