@@ -534,6 +534,102 @@ int main()
 
 			me.Draw(lightingShader);
 		}
+<<<<<<< Updated upstream
+=======
+
+
+
+
+		
+//Dibujamos la PC vieja
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
+
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(-1.0f, 0.09f + verticalCompensate, 0.0f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+
+
+//Dibujamos la PC vieja
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
+
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(0.98f, 0.09f + verticalCompensate, 0.0f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+
+// Dibujamos la PC vieja
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
+
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(2.98f, 0.09f + verticalCompensate, 0.0f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+
+// Dibujamos la PC vieja
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
+
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(4.4f, -1.15f + verticalCompensate, 0.2f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+>>>>>>> Stashed changes
 
 
 
