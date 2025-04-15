@@ -91,9 +91,7 @@ bool gaInflating = false;
 bool gaContracting = false;
 
 
-bool ganVisible = false;
 bool ganAppearing = false;
-float ganScaleFactor = 0.0f;
 float ganRotation = 0.0f;
 float ganTargetRotation = 270.0f;
 
@@ -164,6 +162,14 @@ float fuRotation = 0.0f;
 float fuOffsetX = 0.0f;
 float fuTargetRotation = 180.0f;
 
+bool ganFinished = false;
+
+bool gaAntesDeX = false;
+
+bool ganVisible = false;     // Antes estaba en true
+float ganScaleFactor = 1.0f;
+bool ganDisappearing = false;
+
 
 
 // Positions of the point lights
@@ -174,7 +180,7 @@ glm::vec3 pointLightPositions[] = {
 	glm::vec3(0.0f,0.0f, 0.0f)
 };
 
-glm::vec3 ganTranslation(4.0f, 0.0f, 0.0f);  // Traslación general de GAN
+glm::vec3 ganTranslation(0.0f, 0.0f, 0.0f);  // Traslación general de GAN
 
 
 float vertices[] = {
@@ -298,6 +304,7 @@ int main()
 	Model ram((char*)"Models/ram/ram.obj");
 	Model pr((char*)"Models/pr/pr.obj");
 	Model fu((char*)"Models/fu/fu.obj");
+	Model sa((char*)"Models/salon/salon.obj");
 
 
 
@@ -686,7 +693,7 @@ int main()
 //	ga.Draw(lightingShader);
 //}
 //
-//// Dibujamos la PC vieja
+// Dibujamos la PC vieja
 //if (gaVisible)
 //{
 //	glm::mat4 explodedGA = glm::mat4(1.0f);
@@ -709,14 +716,33 @@ int main()
 //}
 
 
+if (gaVisible)
+{
+	glm::mat4 explodedGA = glm::mat4(1.0f);
+	float baseOffset = 0.8f;
 
-// ... (todo el código anterior se mantiene igual)
+	// Aparece con escala normal si aún no se ha inflado
+	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
+	float scaleY = 1.0f;
+
+	float verticalCompensate = baseOffset * (1.0f - scaleY);
+	explodedGA = glm::translate(explodedGA, glm::vec3(0.0f, 0.0f + verticalCompensate, 0.0f));
+
+	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
+	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+	ga.Draw(lightingShader);
+}
+
 
 
 if (ganVisible)
 {
 	glm::mat4 modelGan = glm::mat4(1.0f);
-	modelGan = glm::translate(modelGan, glm::vec3(4.0f, 0.0f, 0.0f)); // Ajusta posición
+	modelGan = glm::translate(modelGan, glm::vec3(0.0f, 0.0f, 0.0f)); // Ajusta posición
 	modelGan = glm::rotate(modelGan, glm::radians(ganRotation), glm::vec3(0.0f, 1.0f, 0.0f));
 	modelGan = glm::scale(modelGan, glm::vec3(ganScaleFactor));
 
@@ -960,55 +986,88 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		gaVisible = true;
 	}
 
-	if (key == GLFW_KEY_V && action == GLFW_PRESS)
-	{
-		gaExplosionActive = false;
-		gaExplosionFactor = 0.0f;
-		gaVisible = true;
-	}
-
-	if (key == GLFW_KEY_C && action == GLFW_PRESS)
-	{
-		ganAppearing = true;
-		ganScaleFactor = 0.0f;
-		ganRotation = 0.0f;
-		ganVisible = true;
-
-	}
-
-
-
 	if (key == GLFW_KEY_X && action == GLFW_PRESS)
 	{
-		// Solo si no hay animaciones en curso
-		if (!gAnimActive && !grAnimActive && !ramAnimActive)
+		if (gaVisible && !gaExplosionActive)
 		{
-			animacionXCompleta = false;
+			gaExplosionActive = true;
+			gaContracting = true;
+			gaInflating = false;
 
-			// Activar animación para modelo G
-			gVisible = true;
-			gScaleFactor = 0.0f;
-			gRotation = 0.0f;
-			gOffsetX = -1.0f;
-			gAnimActive = true;
-			gInPhase1 = true;  // fase de aparición girando
-
-			// Resetear los otros modelos
-			grVisible = false;
-			grAnimActive = false;
-			grScaleFactor = 0.0f;
-			grRotation = 0.0f;
-			grOffsetX = -1.0f;
-			grInPhase1 = false;
-
-			ramVisible = false;
-			ramAnimActive = false;
-			ramScaleFactor = 0.0f;
-			ramRotation = 0.0f;
-			ramOffsetX = -1.0f;
-			ramInPhase1 = false;
+			gaAntesDeX = true; // 🔁 Marca que debe iniciar la animación de X cuando ga desaparezca
 		}
 	}
+	if (key == GLFW_KEY_R && action == GLFW_PRESS)
+	{
+		// Reset total
+		gaVisible = true;
+		gaExplosionFactor = 1.0f;
+		gaExplosionActive = false;
+		gaInflating = false;
+		gaContracting = false;
+
+		ganVisible = false;
+		ganAppearing = false;
+		ganRotation = 0.0f;
+		ganScaleFactor = 1.0f;
+		ganFinished = false;
+
+		gVisible = false;
+		gAppearing = false;
+		gAnimActive = false;
+		gOffsetX = 0.0f;
+		gRotation = 0.0f;
+		gScaleFactor = 0.0f;
+		gInPhase1 = false;
+		gInPhase2 = false;
+
+		grVisible = false;
+		grAppearing = false;
+		grAnimActive = false;
+		grOffsetX = -1.0f;
+		grRotation = 0.0f;
+		grScaleFactor = 0.0f;
+		grInPhase1 = false;
+		grInPhase2 = false;
+
+		ramVisible = false;
+		ramAppearing = false;
+		ramAnimActive = false;
+		ramOffsetX = -1.0f;
+		ramRotation = 0.0f;
+		ramScaleFactor = 0.0f;
+		ramInPhase1 = false;
+		ramInPhase2 = false;
+
+		prVisible = false;
+		prAnimActive = false;
+		prOffsetX = -1.0f;
+		prRotation = 0.0f;
+		prScaleFactor = 0.0f;
+		prInPhase1 = false;
+		prInPhase2 = false;
+
+		fuVisible = false;
+		fuAnimActive = false;
+		fuOffsetX = -1.0f;
+		fuRotation = 0.0f;
+		fuScaleFactor = 0.0f;
+		fuInPhase1 = false;
+		fuInPhase2 = false;
+
+		explosionActive = false;
+		explosionFactor = 0.0f;
+		model1Visible = false;
+		model2Visible = false;
+		model2Appearing = false;
+
+		gaAntesDeX = false;
+		animacionXCompleta = false;
+	}
+
+
+
+
 
 
 
@@ -1077,7 +1136,7 @@ void Animation() {
 		}
 		else if (gaContracting)
 		{
-			gaExplosionFactor -= deltaTime * 3.0f;
+			gaExplosionFactor -= deltaTime * 1.5f;
 			if (gaExplosionFactor <= 0.0f)
 			{
 				gaExplosionFactor = 0.0f;
@@ -1088,23 +1147,9 @@ void Animation() {
 		}
 	}
 
-	if (ganAppearing)
-	{
-		if (ganScaleFactor < 1.0f)
-		{
-			ganScaleFactor += deltaTime * 1.2f;
-			if (ganScaleFactor > 1.0f) ganScaleFactor = 1.0f;
-		}
-		if (ganRotation < ganTargetRotation)
-		{
-			ganRotation += deltaTime * 180.0f;
-			if (ganRotation >= ganTargetRotation)
-			{
-				ganRotation = ganTargetRotation;
-				ganAppearing = false;
-			}
-		}
-	}
+	
+	
+
 
 	if (gAppearing)
 	{
@@ -1284,6 +1329,132 @@ void Animation() {
 			}
 		}
 	}
+	// ✅ Si se presionó X mientras ga estaba activo, espera a que termine para iniciar animación
+	if (gaAntesDeX && !gaVisible && !gaExplosionActive)
+	{
+		// Ahora sí activa la animación X
+		animacionXCompleta = false;
+
+		ganAppearing = true;
+		ganScaleFactor = 0.0f;
+		ganRotation = 0.0f;
+		ganVisible = true;
+		ganFinished = false;
+
+		// Resetear modelos posteriores
+		grVisible = false;
+		grAnimActive = false;
+		grScaleFactor = 0.0f;
+		grRotation = 0.0f;
+		grOffsetX = -1.0f;
+		grInPhase1 = false;
+
+		ramVisible = false;
+		ramAnimActive = false;
+		ramScaleFactor = 0.0f;
+		ramRotation = 0.0f;
+		ramOffsetX = -1.0f;
+		ramInPhase1 = false;
+
+		prVisible = false;
+		prAnimActive = false;
+		prScaleFactor = 0.0f;
+		prRotation = 0.0f;
+		prOffsetX = -1.0f;
+		prInPhase1 = false;
+
+		fuVisible = false;
+		fuAnimActive = false;
+		fuScaleFactor = 0.0f;
+		fuRotation = 0.0f;
+		fuOffsetX = -1.0f;
+		fuInPhase1 = false;
+
+		gaAntesDeX = false; // ✅ Ya se usó
+	}
+	if (ganAppearing)
+	{
+		// Escalar progresivamente hasta 1.0
+		if (ganScaleFactor < 1.0f)
+		{
+			ganScaleFactor += deltaTime * 0.5f;
+			if (ganScaleFactor > 1.0f) ganScaleFactor = 1.0f;
+		}
+
+		// Rotar progresivamente hasta el ángulo objetivo
+		if (ganRotation < ganTargetRotation)
+		{
+			ganRotation += deltaTime * 180.0f;
+			if (ganRotation > ganTargetRotation)
+				ganRotation = ganTargetRotation;
+		}
+
+		// Solo se termina cuando ambas animaciones han concluido
+		if (ganScaleFactor >= 1.0f && ganRotation >= ganTargetRotation)
+		{
+			ganAppearing = false;
+			ganFinished = true;
+		}
+	}
+
+
+
+	if (ganFinished && !gAnimActive)
+	{
+		gVisible = true;
+		gScaleFactor = 0.0f;
+		gRotation = 0.0f;
+		gOffsetX = -1.0f;
+		gAnimActive = true;
+		gInPhase1 = true;
+
+		// ✅ Esto evita que vuelva a ejecutarse
+		ganFinished = false;
+	}
+	if (gaAntesDeX && !gaVisible && !gaExplosionActive)
+	{
+		gaAntesDeX = false;
+
+		// Activa la secuencia de modelos posteriores
+		gVisible = true;
+		gScaleFactor = 0.0f;
+		gRotation = 0.0f;
+		gOffsetX = -1.0f;
+		gAnimActive = true;
+		gInPhase1 = true;
+
+		// Reiniciar todos los demás
+		grVisible = false;
+		grAnimActive = false;
+		grScaleFactor = 0.0f;
+		grRotation = 0.0f;
+		grOffsetX = -1.0f;
+		grInPhase1 = false;
+
+		ramVisible = false;
+		ramAnimActive = false;
+		ramScaleFactor = 0.0f;
+		ramRotation = 0.0f;
+		ramOffsetX = -1.0f;
+		ramInPhase1 = false;
+
+		prVisible = false;
+		prAnimActive = false;
+		prScaleFactor = 0.0f;
+		prRotation = 0.0f;
+		prOffsetX = -1.0f;
+		prInPhase1 = false;
+
+		fuVisible = false;
+		fuAnimActive = false;
+		fuScaleFactor = 0.0f;
+		fuRotation = 0.0f;
+		fuOffsetX = -1.0f;
+		fuInPhase1 = false;
+	}
+
+
+
 
 }
 
