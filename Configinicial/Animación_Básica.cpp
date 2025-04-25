@@ -429,6 +429,9 @@ struct SillaAnimada {
 	glm::vec3 snPos;
 	glm::vec3 targetPos;
 	glm::vec3 siPosOriginal; // NUEVA
+	bool siExplotaComoModel1 = false;
+	float siExplosionFactor = 0.0f;
+
 	bool siVisible;
 	bool siMoving;
 	bool siShrinking;
@@ -893,6 +896,7 @@ int main()
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
 
 		
+
 		// PANTALLAS 1
 		glm::mat4 groupTransform = glm::mat4(1.0f);
 		groupTransform = glm::translate(groupTransform, glm::vec3(3.5f, 0.45f, -23.5f)); // posición base
@@ -2394,10 +2398,6 @@ int main()
 
 
 
-
-
-
-
 		//
 
 		//		//DIBUJO DE SALON
@@ -2447,8 +2447,10 @@ int main()
 				modelSi = glm::rotate(modelSi, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 				modelSi = glm::scale(modelSi, glm::vec3(silla.siScale));
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelSi));
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), silla.siExplosionFactor);
 				si.Draw(lightingShader);
 			}
+
 
 			if (silla.snVisible) {
 				glm::mat4 modelSn = glm::mat4(1.0f);
@@ -2765,13 +2767,16 @@ void Animation() {
 			if (fabs(silla.siPos.y - (silla.siPosOriginal.y + 4.0f)) < 0.05f) {
 				silla.siPos.y = silla.siPosOriginal.y + 4.0f;
 
+				silla.snScale = 0.0f;
+				silla.snPos = silla.targetPos; // ya en la posición
 				silla.animacion.keyframes = {
-					{0.0f, silla.siPos, 1.0f},
-					{1.0f, silla.targetPos, 1.0f}
+	{0.0f, silla.siPos, 1.0f},
+	{2.0f, silla.targetPos, 1.0f}
 				};
 				silla.animacion.start();
-
 				silla.fase = SillaAnimada::FaseAnimSilla::MoverASalida;
+
+
 			}
 			break;
 
@@ -2783,21 +2788,29 @@ void Animation() {
 				silla.siPos = silla.animacion.interpolatedPosition;
 			}
 			else {
-				silla.siVisible = false;
-				silla.snVisible = true;
-				silla.snScale = 1.0f;
-				silla.snPos = silla.targetPos;
+				silla.siExplotaComoModel1 = true;
+				silla.siExplosionFactor = 0.0f;
+				silla.fase = SillaAnimada::FaseAnimSilla::DesaparecerSi; // ← solo esto
 
-				silla.animacion.keyframes = {
-					{0.0f, silla.snPos, 1.0f},
-					{1.0f, silla.siPosOriginal + glm::vec3(0.0f, 4.0f, 0.0f), 1.0f}
-				};
-				silla.animacion.start();
-				silla.fase = SillaAnimada::FaseAnimSilla::AparecerSn;
+				// El resto va en DesaparecerSi
 			}
+
 			break;
 
 		case SillaAnimada::FaseAnimSilla::AparecerSn:
+			silla.snScale = glm::mix(silla.snScale, 1.0f, deltaTime * 2.0f);
+			if (fabs(silla.snScale - 1.0f) < 0.05f) {
+				silla.snScale = 1.0f;
+
+				silla.animacion.keyframes = {
+					{0.0f, silla.snPos, 1.0f},
+					{3.0f, silla.siPosOriginal + glm::vec3(0.0f, 4.0f, 0.0f), 1.0f}
+				};
+				silla.animacion.start();
+				silla.fase = SillaAnimada::FaseAnimSilla::SnMoverAOriginal;
+			}
+			break;
+		case SillaAnimada::FaseAnimSilla::SnMoverAOriginal:
 			if (silla.animacion.active) {
 				silla.animacion.update(deltaTime * 1.0f);
 				silla.snPos = silla.animacion.interpolatedPosition;
@@ -2807,6 +2820,8 @@ void Animation() {
 			}
 			break;
 
+
+
 		case SillaAnimada::FaseAnimSilla::SnEscalarOriginal:
 			silla.snScale = glm::mix(silla.snScale, 4.0f, deltaTime * 1.0f);
 			if (fabs(silla.snScale - 4.0f) < 0.05f) {
@@ -2815,13 +2830,46 @@ void Animation() {
 			}
 			break;
 
-		case SillaAnimada::FaseAnimSilla::SnBajarFinal:
-			silla.snPos.y = glm::mix(silla.snPos.y, silla.siPosOriginal.y, deltaTime * 1.0f);
-			if (fabs(silla.snPos.y - silla.siPosOriginal.y) < 0.05f) {
+		case SillaAnimada::FaseAnimSilla::SnBajarFinal: {
+			const float velocidadBajada = 1.5f;
+			silla.snPos.y = glm::mix(silla.snPos.y, silla.siPosOriginal.y, deltaTime * velocidadBajada);
+
+			// Aquí hacemos una transición aún más suave
+			if (fabs(silla.snPos.y - silla.siPosOriginal.y) < 0.01f) {
 				silla.snPos.y = silla.siPosOriginal.y;
 				silla.fase = SillaAnimada::FaseAnimSilla::Completa;
 			}
 			break;
+		}
+		case SillaAnimada::FaseAnimSilla::DesaparecerSi:
+			if (silla.siExplosionFactor < 1.7f) {
+				silla.siExplosionFactor += deltaTime * 0.3f;
+			}
+
+			// Escala a 0 mientras explota
+			silla.siScale = glm::mix(silla.siScale, 0.0f, deltaTime * 1.0f);
+
+			if (silla.siExplosionFactor >= 1.7f && silla.siScale <= 0.05f) {
+				silla.siVisible = false;
+				silla.siExplotaComoModel1 = false;
+				silla.siExplosionFactor = 0.0f;
+				silla.siScale = 0.0f;
+
+				// Activa el modelo sn
+				silla.snVisible = true;
+				silla.snScale = 0.0f;
+				silla.snPos = silla.targetPos;
+
+				silla.animacion.keyframes = {
+					{0.0f, silla.snPos, 1.0f},
+					{3.0f, silla.siPosOriginal + glm::vec3(0.0f, 4.0f, 0.0f), 1.0f}
+				};
+				silla.animacion.start();
+				silla.fase = SillaAnimada::FaseAnimSilla::AparecerSn;
+			}
+			break;
+
+
 
 		case SillaAnimada::FaseAnimSilla::Completa:
 		default:
