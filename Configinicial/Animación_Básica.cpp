@@ -56,7 +56,7 @@ float velocidadBajadaY = 4.0f; // puedes ajustarlo si quieres más lento
 bool reduciendoEscala = false;
 float escalaTemporal = 4.0f;
 
-bool animacionSillaEnCurso = false;
+
 
 
 // Animación silla 'si' y nueva silla 'sn'
@@ -376,6 +376,54 @@ struct AnimacionXGroup {
 	bool animacionXCompleta = false;
 };
 
+struct Keyframe {
+	float time;  // Tiempo relativo desde el inicio
+	glm::vec3 position;
+	float scale;
+};
+
+struct SillaKeyframeAnimation {
+	std::vector<Keyframe> keyframes;
+	float currentTime = 0.0f;
+	bool active = false;
+	int currentIndex = 0;
+
+	glm::vec3 interpolatedPosition;
+	float interpolatedScale;
+
+	void start() {
+		currentTime = 0.0f;
+		currentIndex = 0;
+		active = true;
+	}
+
+	void update(float deltaTime) {
+		if (!active || keyframes.size() < 2) return;
+
+		currentTime += deltaTime;
+
+		while (currentIndex < keyframes.size() - 1 &&
+			currentTime > keyframes[currentIndex + 1].time) {
+			currentIndex++;
+		}
+
+		if (currentIndex >= keyframes.size() - 1) {
+			active = false;
+			return;
+		}
+
+		Keyframe& kf1 = keyframes[currentIndex];
+		Keyframe& kf2 = keyframes[currentIndex + 1];
+
+		float localTime = currentTime - kf1.time;
+		float duration = kf2.time - kf1.time;
+		float t = localTime / duration;
+
+		interpolatedPosition = glm::mix(kf1.position, kf2.position, t);
+		interpolatedScale = glm::mix(kf1.scale, kf2.scale, t);
+	}
+};
+
 struct SillaAnimada {
 	glm::vec3 siPos;
 	glm::vec3 snPos;
@@ -390,8 +438,76 @@ struct SillaAnimada {
 	float siScale;
 	float snScale;
 	bool snRegresoTerminado;
+	SillaKeyframeAnimation animacion;
 
 
+	enum class FaseAnimSilla {
+		EscalandoAntesDeMover,
+		SubirAntesDeMover,
+		MoverASalida,
+		DesaparecerSi,
+		AparecerSn,
+		SnMoverAOriginal,
+		SnEscalarOriginal,
+		SnBajarFinal,
+		Completa
+
+		
+
+		
+	};
+
+	FaseAnimSilla fase = FaseAnimSilla::Completa;
+
+
+
+	struct Keyframe {
+		float time;  // Tiempo relativo desde el inicio
+		glm::vec3 position;
+		float scale;
+	};
+
+	struct SillaKeyframeAnimation {
+		std::vector<Keyframe> keyframes;
+		float currentTime = 0.0f;
+		bool active = false;
+		int currentIndex = 0;
+
+		glm::vec3 interpolatedPosition;
+		float interpolatedScale;
+
+		void start() {
+			currentTime = 0.0f;
+			currentIndex = 0;
+			active = true;
+		}
+
+		void update(float deltaTime) {
+			if (!active || keyframes.size() < 2) return;
+
+			currentTime += deltaTime;
+
+			while (currentIndex < keyframes.size() - 1 &&
+				currentTime > keyframes[currentIndex + 1].time) {
+				currentIndex++;
+			}
+
+			if (currentIndex >= keyframes.size() - 1) {
+				active = false;
+				return;
+			}
+
+			Keyframe& kf1 = keyframes[currentIndex];
+			Keyframe& kf2 = keyframes[currentIndex + 1];
+
+			float localTime = currentTime - kf1.time;
+			float duration = kf2.time - kf1.time;
+			float t = localTime / duration;
+
+			interpolatedPosition = glm::mix(kf1.position, kf2.position, t);
+			interpolatedScale = glm::mix(kf1.scale, kf2.scale, t);
+		}
+	};
 	SillaAnimada(glm::vec3 start)
 	{
 
@@ -408,11 +524,20 @@ struct SillaAnimada {
 		siPos = start;
 		siPosOriginal = start; // GUARDAMOS
 
-		targetPos = glm::vec3(11.0f, 0.5f, -10.0f);
+		targetPos = glm::vec3(11.0f, siPosOriginal.y + 4.0f, -20.0f);
+
 		snRegresoTerminado = false;
+		
+
 
 	}
 };
+
+
+
+
+
+
 std::vector<SillaAnimada> sillas;
 
 bool hayColision(glm::vec3 nuevaPos, const SillaAnimada& actual)
@@ -636,9 +761,9 @@ int main()
 	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -52.5f));
 
 	// Nuevas instancias sin cambio de posición o escala (solo animación en el lugar)
-	animaciones.emplace_back(glm::vec3(4.0f, -2.5f, -59.0f), true);
-	animaciones.emplace_back(glm::vec3(-3.0f, -2.5f, -59.0f), true);
-	animaciones.emplace_back(glm::vec3(-10.0f, -2.5f, -59.0f), true);
+	animaciones.emplace_back(glm::vec3(4.0f, -2.3f, -59.0f), true);
+	animaciones.emplace_back(glm::vec3(-3.0f, -2.3f, -59.0f), true);
+	animaciones.emplace_back(glm::vec3(-10.0f, -2.3f, -59.0f), true);
 
 	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -28.0f));
 	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -23.0f));
@@ -767,6 +892,7 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), explosionFactor);
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
 
+		
 		// PANTALLAS 1
 		glm::mat4 groupTransform = glm::mat4(1.0f);
 		groupTransform = glm::translate(groupTransform, glm::vec3(3.5f, 0.45f, -23.5f)); // posición base
@@ -1567,6 +1693,8 @@ int main()
 			Com2.Draw(lightingShader);
 		}
 
+
+
 		//FILA 1 VENTANA
 		{
 			glm::mat4 modelMe = glm::mat4(1.0f);
@@ -1725,6 +1853,7 @@ int main()
 
 			me.Draw(lightingShader);
 		}
+
 
 
 		// ------------------ PI ------------------
@@ -1975,7 +2104,7 @@ int main()
 		// ------------------ te ------------------
 		{
 			glm::mat4 modelte9 = glm::mat4(1.0f);  // Matriz identidad
-			modelte9 = glm::translate(modelte9, glm::vec3(4.8f, -0.5f, -58.5f)); // Posición del modelo
+			modelte9 = glm::translate(modelte9, glm::vec3(5.0f, -0.5f, -58.0f)); // Posición del modelo
 			modelte9 = glm::rotate(modelte9, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
 			modelte9 = glm::scale(modelte9, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
 
@@ -2014,7 +2143,7 @@ int main()
 
 		{
 			glm::mat4 modelte1R = glm::mat4(1.0f);  // Matriz identidad
-			modelte1R = glm::translate(modelte1R, glm::vec3(4.8f, -0.5f, -46.5f)); // Posición del modelo
+			modelte1R = glm::translate(modelte1R, glm::vec3(5.0f, -0.5f, -47.0f)); // Posición del modelo
 			modelte1R = glm::rotate(modelte1R, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
 			modelte1R = glm::scale(modelte1R, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
 
@@ -2027,7 +2156,7 @@ int main()
 
 		{
 			glm::mat4 modelte13 = glm::mat4(1.0f);  // Matriz identidad
-			modelte13 = glm::translate(modelte13, glm::vec3(-2.2f, -0.5f, -58.5f)); // Posición del modelo
+			modelte13 = glm::translate(modelte13, glm::vec3(-2.0f, -0.5f, -58.0f)); // Posición del modelo
 			modelte13 = glm::rotate(modelte13, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
 			modelte13 = glm::scale(modelte13, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
 
@@ -2066,7 +2195,7 @@ int main()
 
 		{
 			glm::mat4 modelte1E = glm::mat4(1.0f);  // Matriz identidad
-			modelte1E = glm::translate(modelte1E, glm::vec3(-2.2f, -0.5f, -46.5f)); // Posición del modelo
+			modelte1E = glm::translate(modelte1E, glm::vec3(-2.0f, -0.5f, -47.0f)); // Posición del modelo
 			modelte1E = glm::rotate(modelte1E, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
 			modelte1E = glm::scale(modelte1E, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
 
@@ -2078,7 +2207,7 @@ int main()
 		}
 		{
 			glm::mat4 modelte16 = glm::mat4(1.0f);  // Matriz identidad
-			modelte16 = glm::translate(modelte16, glm::vec3(-9.2f, -0.5f, -58.5f)); // Posición del modelo
+			modelte16 = glm::translate(modelte16, glm::vec3(-9.0f, -0.5f, -58.0f)); // Posición del modelo
 			modelte16 = glm::rotate(modelte16, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
 			modelte16 = glm::scale(modelte16, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
 
@@ -2117,7 +2246,7 @@ int main()
 
 		{
 			glm::mat4 modelte1T = glm::mat4(1.0f);  // Matriz identidad
-			modelte1T = glm::translate(modelte1T, glm::vec3(-9.2f, -0.5f, -46.5f)); // Posición del modelo
+			modelte1T = glm::translate(modelte1T, glm::vec3(-9.0f, -0.5f, -47.0f)); // Posición del modelo
 			modelte1T = glm::rotate(modelte1T, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
 			modelte1T = glm::scale(modelte1T, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
 
@@ -2127,72 +2256,6 @@ int main()
 
 			te.Draw(lightingShader);  // Dibuja el modelo
 		}
-
-
-		//
-
-		//		//DIBUJO DE SALON
-
-		if (true)  // Puedes agregar condiciones si lo quieres mostrar opcionalmente
-		{
-			glm::mat4 modelSalon = glm::mat4(1.0f);  // Matriz identidad
-
-			// No hay traslación, rotación ni escala (centrado y a tamaño original)
-			// Si quieres escalar un poco:
-			// modelSalon = glm::scale(modelSalon, glm::vec3(0.5f));
-			modelSalon = glm::translate(modelSalon, glm::vec3(0.0f, -4.0f, -40.0f)); // Baja un poco el modelo
-			modelSalon = glm::rotate(modelSalon, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Gira
-			modelSalon = glm::scale(modelSalon, glm::vec3(1.0f)); // Reduce a la mitad
-			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSalon));
-
-			sal.Draw(lightingShader);
-		}
-
-
-
-		//FILA 1 PUERTA
-		{
-			glm::mat4 modelMe = glm::mat4(1.0f);
-			modelMe = glm::translate(modelMe, glm::vec3(4.0f, -2.0f, -25.0f)); // puedes ajustar la posición
-			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
-			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
-
-			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
-			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
-
-			me.Draw(lightingShader);
-		}
-		//FILA 1.2 PUERTA
-		{
-			glm::mat4 modelMe = glm::mat4(1.0f);
-			modelMe = glm::translate(modelMe, glm::vec3(4.0f, -2.0f, -32.0f)); // puedes ajustar la posición
-			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
-			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
-
-			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
-			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
-
-			me.Draw(lightingShader);
-		}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 		for (const auto& instancia : animaciones)
@@ -2328,6 +2391,55 @@ int main()
 			}
 		}
 
+
+
+
+
+
+
+
+		//
+
+		//		//DIBUJO DE SALON
+
+		if (true)  // Puedes agregar condiciones si lo quieres mostrar opcionalmente
+		{
+			glm::mat4 modelSalon = glm::mat4(1.0f);  // Matriz identidad
+
+			// No hay traslación, rotación ni escala (centrado y a tamaño original)
+			// Si quieres escalar un poco:
+			// modelSalon = glm::scale(modelSalon, glm::vec3(0.5f));
+			modelSalon = glm::translate(modelSalon, glm::vec3(0.0f, -4.0f, -40.0f)); // Baja un poco el modelo
+			modelSalon = glm::rotate(modelSalon, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Gira
+			modelSalon = glm::scale(modelSalon, glm::vec3(1.0f)); // Reduce a la mitad
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSalon));
+
+			sal.Draw(lightingShader);
+		}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+
 		for (const auto& silla : sillas) {
 			if (silla.siVisible) {
 				glm::mat4 modelSi = glm::mat4(1.0f);
@@ -2443,20 +2555,7 @@ void DoMovement()
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (key == GLFW_KEY_P && action == GLFW_PRESS)
-	{
-		if (!animacionSillaEnCurso) {
-			for (auto& silla : sillas)
-			{
-				if (silla.siVisible && !silla.siMoving && !silla.siShrinking)
-				{
-					silla.siMoving = true;
-					animacionSillaEnCurso = true;
-					break; // Solo activamos una
-				}
-			}
-		}
-	}
+	
 
 
 
@@ -2505,6 +2604,63 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 			instancia.gaExplosionActive = true;
 		}
 	}
+
+	if (key == GLFW_KEY_P && action == GLFW_PRESS)
+	{
+		for (auto& silla : sillas)
+		{
+			if (!silla.animacion.active && silla.siVisible && silla.fase == SillaAnimada::FaseAnimSilla::Completa) 
+				silla.fase = SillaAnimada::FaseAnimSilla::EscalandoAntesDeMover;
+			{
+				silla.animacion.keyframes = {
+	{0.0f, silla.snPos, 1.0f},
+	{1.0f, glm::vec3(silla.targetPos.x, 4.0f, silla.targetPos.z), 1.0f}
+				};
+
+
+
+					
+				
+				silla.animacion.start();
+
+				// No cambiar visibilidad aquí. Espera a que termine la animación si.
+				silla.siMoving = true;
+			}
+		}
+	}
+
+	if (key == GLFW_KEY_L && action == GLFW_PRESS)
+	{
+		for (auto& silla : sillas)
+		{
+			// Reinicia posiciones y visibilidad
+			silla.siPos = silla.siPosOriginal;
+			silla.siScale = 4.0f;
+			silla.siVisible = true;
+
+			silla.snPos = silla.targetPos + glm::vec3(0.0f, 4.0f, 0.0f);  // Empieza más arriba
+			silla.snScale = 0.0f;
+			silla.snVisible = false;
+
+			// Reinicia estados de control
+			silla.siMoving = false;
+			silla.snAppearing = false;
+			silla.snReturning = false;
+			silla.snRegresoTerminado = false;
+
+			// Reinicia animación
+			silla.animacion.keyframes.clear();
+			silla.animacion.currentTime = 0.0f;
+			silla.animacion.currentIndex = 0;
+			silla.animacion.active = false;
+
+			// ← Importante: reinicia la fase
+			silla.fase = SillaAnimada::FaseAnimSilla::EscalandoAntesDeMover;
+		}
+	}
+
+
+
 
 
 
@@ -2593,76 +2749,88 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 
 void Animation() {
 
-	for (auto& silla : sillas)
-	{
-		// Movimiento de la silla original 'si' en X y luego en Z
-		if (silla.siVisible && silla.siMoving) {
-			if (fabs(silla.siPos.x - silla.targetPos.x) > 0.1f) {
-				float stepX = (silla.targetPos.x > silla.siPos.x ? 1.0f : -1.0f) * deltaTime * 2.5f;
-				silla.siPos.x += stepX;
+	for (auto& silla : sillas) {
+		switch (silla.fase) {
+
+		case SillaAnimada::FaseAnimSilla::EscalandoAntesDeMover:
+			silla.siScale = glm::mix(silla.siScale, 1.0f, deltaTime * 1.0f);
+			if (fabs(silla.siScale - 1.0f) < 0.05f) {
+				silla.siScale = 1.0f;
+				silla.fase = SillaAnimada::FaseAnimSilla::SubirAntesDeMover;
 			}
-			else if (fabs(silla.siPos.z - silla.targetPos.z) > 0.1f) {
-				float stepZ = (silla.targetPos.z > silla.siPos.z ? 1.0f : -1.0f) * deltaTime * 2.5f;
-				silla.siPos.z += stepZ;
+			break;
+
+		case SillaAnimada::FaseAnimSilla::SubirAntesDeMover:
+			silla.siPos.y = glm::mix(silla.siPos.y, silla.siPosOriginal.y + 4.0f, deltaTime * 1.0f);
+			if (fabs(silla.siPos.y - (silla.siPosOriginal.y + 4.0f)) < 0.05f) {
+				silla.siPos.y = silla.siPosOriginal.y + 4.0f;
+
+				silla.animacion.keyframes = {
+					{0.0f, silla.siPos, 1.0f},
+					{1.0f, silla.targetPos, 1.0f}
+				};
+				silla.animacion.start();
+
+				silla.fase = SillaAnimada::FaseAnimSilla::MoverASalida;
+			}
+			break;
+
+
+
+		case SillaAnimada::FaseAnimSilla::MoverASalida:
+			if (silla.animacion.active) {
+				silla.animacion.update(deltaTime * 1.0f);
+				silla.siPos = silla.animacion.interpolatedPosition;
 			}
 			else {
-				silla.siMoving = false;
-				silla.siShrinking = true;
-			}
-		}
-
-		// Desaparición de 'si' por escala
-		if (silla.siShrinking) {
-			silla.siScale -= deltaTime * 4.0f;
-			if (silla.siScale <= 0.0f) {
-				silla.siScale = 0.0f;
 				silla.siVisible = false;
-
-				// Activar 'sn'
 				silla.snVisible = true;
-				silla.snAppearing = true;
-				silla.snPos = silla.siPos;  // Aparece donde desapareció 'si'
-			}
-		}
+				silla.snScale = 1.0f;
+				silla.snPos = silla.targetPos;
 
-		// Aparece 'sn' desde escala 0 hasta 5.0
-		if (silla.snAppearing) {
-			silla.snScale += deltaTime * 4.0f;
-			if (silla.snScale >= 5.0f) {
-				silla.snScale = 5.0f;
-				silla.snAppearing = false;
+				silla.animacion.keyframes = {
+					{0.0f, silla.snPos, 1.0f},
+					{1.0f, silla.siPosOriginal + glm::vec3(0.0f, 4.0f, 0.0f), 1.0f}
+				};
+				silla.animacion.start();
+				silla.fase = SillaAnimada::FaseAnimSilla::AparecerSn;
+			}
+			break;
 
-				silla.snReturning = true; // Inicia retorno inverso a siPosOriginal
+		case SillaAnimada::FaseAnimSilla::AparecerSn:
+			if (silla.animacion.active) {
+				silla.animacion.update(deltaTime * 1.0f);
+				silla.snPos = silla.animacion.interpolatedPosition;
 			}
-		}
-		if (silla.snScale == 5.0f && silla.snReturning) {
-			float epsilon = 0.01f;
-
-			// Primero mover en Z
-			if (fabs(silla.snPos.z - silla.siPosOriginal.z) > epsilon) {
-				float direccionZ = (silla.siPosOriginal.z > silla.snPos.z) ? 1.0f : -1.0f;
-				silla.snPos.z += direccionZ * deltaTime * 2.5f;
-			}
-			// Luego mover en X
-			else if (fabs(silla.snPos.x - silla.siPosOriginal.x) > epsilon) {
-				float direccionX = (silla.siPosOriginal.x > silla.snPos.x) ? 1.0f : -1.0f;
-				silla.snPos.x += direccionX * deltaTime * 2.5f;
-			}
-			// Ya llegó (dentro del margen)
 			else {
-				silla.snPos = silla.siPosOriginal;  // Corrige la vibración
-				silla.snReturning = false;
-				animacionSillaEnCurso = false;
+				silla.fase = SillaAnimada::FaseAnimSilla::SnEscalarOriginal;
 			}
+			break;
+
+		case SillaAnimada::FaseAnimSilla::SnEscalarOriginal:
+			silla.snScale = glm::mix(silla.snScale, 4.0f, deltaTime * 1.0f);
+			if (fabs(silla.snScale - 4.0f) < 0.05f) {
+				silla.snScale = 4.0f;
+				silla.fase = SillaAnimada::FaseAnimSilla::SnBajarFinal;
+			}
+			break;
+
+		case SillaAnimada::FaseAnimSilla::SnBajarFinal:
+			silla.snPos.y = glm::mix(silla.snPos.y, silla.siPosOriginal.y, deltaTime * 1.0f);
+			if (fabs(silla.snPos.y - silla.siPosOriginal.y) < 0.05f) {
+				silla.snPos.y = silla.siPosOriginal.y;
+				silla.fase = SillaAnimada::FaseAnimSilla::Completa;
+			}
+			break;
+
+		case SillaAnimada::FaseAnimSilla::Completa:
+		default:
+			break;
 		}
-
-
-
-
-
-
-
 	}
+
+
+
 
 
 
