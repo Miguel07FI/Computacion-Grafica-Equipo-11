@@ -11,6 +11,7 @@ Proyecto 1 Equipo 11
 #include <iostream>
 #include <cmath>
 
+
 // GLEW
 #include <GL/glew.h>
 
@@ -34,14 +35,55 @@ Proyecto 1 Equipo 11
 #include "Camera.h"
 #include "Model.h"
 
+#include <vector>
+
+
+//ANIMAICION
+
+
+float globalTranslationYInicial = 7.0f;
+float globalTranslationYFinal = 0.5f;
+bool animacionXTerminada = false;
+
+glm::vec3 globalTranslationX = glm::vec3(0.0f, globalTranslationYInicial, -25.8f);
+glm::vec3 globalScaleX = glm::vec3(4.0f, 4.0f, 4.0f);
+float globalRotationX = 90.0f;
+
+bool bajandoY = false;
+float velocidadBajadaY = 4.0f; // puedes ajustarlo si quieres más lento
+
+
+bool reduciendoEscala = false;
+float escalaTemporal = 4.0f;
+
+
+
+
+// Animación silla 'si' y nueva silla 'sn'
+bool animSiActive = true;         // Aparece al arranque
+bool animSnActive = false;
+
+bool siMovingOut = false;
+bool siShrinking = false;
+bool snAppearing = false;
+bool snMovingIn = false;
+
+glm::vec3 siPos = glm::vec3(5.5f, -1.5f, -25.0f);
+glm::vec3 snPos = glm::vec3(9.0f, -1.0f, -15.0f);  // Aparece aquí
+
+float siScale = 4.0f;
+float snScale = 0.0f;
+
+
+
 // Function prototypes
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
-void MouseCallback(GLFWwindow *window, double xPos, double yPos);
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void MouseCallback(GLFWwindow* window, double xPos, double yPos);
 void DoMovement();
 void Animation();
 
 // Window dimensions
-const GLuint WIDTH = 800, HEIGHT = 600;
+const GLuint WIDTH = 1920, HEIGHT = 1080;
 int SCREEN_WIDTH, SCREEN_HEIGHT;
 
 // Camera
@@ -64,8 +106,8 @@ bool moviendoArriba = true;  // Variable para controlar la dirección de la pelo
 bool animacionActivada = false;  // Animación inicialmente desactivada
 
 
-float limiteInferior = 0.0f;  
-float limiteSuperior = 1.7;   
+float limiteInferior = 0.0f;
+float limiteSuperior = 1.7;
 float explosionFactor = 0.0f;
 
 float implosionFactor = 0.0f;
@@ -91,14 +133,12 @@ bool gaInflating = false;
 bool gaContracting = false;
 
 
-bool ganVisible = false;
 bool ganAppearing = false;
-float ganScaleFactor = 0.0f;
 float ganRotation = 0.0f;
 float ganTargetRotation = 270.0f;
 
 // Agregar variables globales para animación del modelo g
-float gOffsetX = 0.0f;
+float gOffsetX = -0.5f;
 bool gMovingOut = false;
 bool gReturning = false;
 bool gAnimActive = false;
@@ -117,7 +157,7 @@ float grScaleFactor = 0.0f;
 float grRotation = 0.0f;
 float grTargetRotation = 360.0f;
 
-float grOffsetX = 0.0f;
+float grOffsetX = -0.5f;
 bool grMovingOut = false;
 bool grReturning = false;
 bool grAnimActive = false;
@@ -131,7 +171,7 @@ bool grAppearingScale = false;  // Ya existe `grAppearing` pero lo usamos para r
 bool ramAnimActive = false;
 bool ramMovingOut = false;
 bool ramReturning = false;
-float ramOffsetX = 0.0f;
+float ramOffsetX = -0.5f;
 
 static bool pasoExtraGr = false;
 static bool pasoExtraRam = false;
@@ -153,7 +193,7 @@ bool prAnimActive = false;
 bool prInPhase1 = false, prInPhase2 = false;
 float prScaleFactor = 0.0f;
 float prRotation = 0.0f;
-float prOffsetX = 0.0f;
+float prOffsetX = -0.5f;
 
 // Variables para modelo 'fu'
 bool fuVisible = false;
@@ -161,20 +201,386 @@ bool fuAnimActive = false;
 bool fuInPhase1 = false, fuInPhase2 = false;
 float fuScaleFactor = 0.0f;
 float fuRotation = 0.0f;
-float fuOffsetX = 0.0f;
+float fuOffsetX = -0.5f;
 float fuTargetRotation = 180.0f;
 
+bool ganFinished = false;
+
+bool gaAntesDeX = false;
+
+bool ganVisible = false;     // Antes estaba en true
+float ganScaleFactor = 1.0f;
+bool ganDisappearing = false;
+
+
+
+struct InstanciaAnimacion {
+	glm::vec3 posicion;
+	glm::vec3 escala;
+	float rotacionBase;
+	float escalaTemporal;
+	float translationY;
+	bool visible;
+
+	// Estados de aparición
+	bool gaVisible, gaExplosionActive, gaInflating, gaContracting;
+	float gaExplosionFactor;
+	bool animacionEstatica;  // true para los 3 nuevos modelos sin escala ni traslación
+
+	bool ganVisible, ganAppearing;
+	float ganScaleFactor, ganRotation;
+
+	bool ganFinished;
+
+	bool gVisible, gAppearing, gAnimActive;
+	float gScaleFactor, gRotation, gOffsetX;
+	float gTargetRotation;
+	bool gInPhase1, gInPhase2;
+
+	bool grVisible, grAnimActive;
+	float grScaleFactor, grRotation, grOffsetX;
+	float grTargetRotation;
+	bool grInPhase1, grInPhase2;
+
+	bool ramVisible, ramAnimActive;
+	float ramScaleFactor, ramRotation, ramOffsetX;
+	float ramTargetRotation;
+	bool ramInPhase1, ramInPhase2;
+
+	bool prVisible, prAnimActive;
+	float prScaleFactor, prRotation, prOffsetX;
+	bool prInPhase1, prInPhase2;
+
+	bool fuVisible, fuAnimActive;
+	float fuScaleFactor, fuRotation, fuOffsetX;
+	float fuTargetRotation;
+	bool fuInPhase1, fuInPhase2;
+
+	bool reduciendoEscala;
+	bool bajandoY;
+	bool escala5Set;
+
+
+
+	InstanciaAnimacion(glm::vec3 pos, bool estatica = false)
+	{
+		animacionEstatica = estatica;
+		posicion = pos;
+		escala = glm::vec3(2.0f);
+		rotacionBase = 90.0f;
+		escalaTemporal = 4.0f;
+		translationY = estatica ? pos.y : globalTranslationYInicial;
+
+		visible = true;
+
+		gaVisible = true; gaExplosionActive = true; gaInflating = true; gaContracting = false;
+		gaExplosionFactor = 1.0f;
+
+		ganVisible = false; ganAppearing = false;
+		ganScaleFactor = 1.0f; ganRotation = 0.0f;
+
+		ganFinished = false;
+
+		gVisible = false; gAppearing = false; gAnimActive = false;
+		gScaleFactor = 0.0f; gRotation = 0.0f; gOffsetX = -0.5f;
+		gTargetRotation = 180.0f;
+		gInPhase1 = false; gInPhase2 = false;
+
+		grVisible = false; grAnimActive = false;
+		grScaleFactor = 0.0f; grRotation = 0.0f; grOffsetX = -0.5f;
+		grTargetRotation = 360.0f;
+		grInPhase1 = false; grInPhase2 = false;
+
+		ramVisible = false; ramAnimActive = false;
+		ramScaleFactor = 0.0f; ramRotation = 0.0f; ramOffsetX = -0.5f;
+		ramTargetRotation = 360.0f;
+		ramInPhase1 = false; ramInPhase2 = false;
+
+		prVisible = false; prAnimActive = false;
+		prScaleFactor = 0.0f; prRotation = 0.0f; prOffsetX = -0.5f;
+		prInPhase1 = false; prInPhase2 = false;
+
+		fuVisible = false; fuAnimActive = false;
+		fuScaleFactor = 0.0f; fuRotation = 0.0f; fuOffsetX = -0.5f;
+		fuTargetRotation = 180.0f;
+		fuInPhase1 = false; fuInPhase2 = false;
+
+		reduciendoEscala = false;
+		bajandoY = false;
+		escala5Set = false;
+
+	}
+};
+
+
+
+struct AnimacionXGroup {
+	glm::vec3 globalTranslationX;
+	glm::vec3 globalScaleX;
+	float globalRotationX;
+
+
+	bool ganVisible = true;
+	bool ganAppearing = false;
+	float ganRotation = 0.0f;
+	float ganTargetRotation = 270.0f;
+	float ganScaleFactor = 0.0f;
+	bool ganFinished = false;
+
+	bool gVisible = false;
+	bool gAppearing = false;
+	bool gAnimActive = false;
+	bool gInPhase1 = false;
+	bool gInPhase2 = false;
+	float gOffsetX = -0.5f;
+	float gScaleFactor = 0.0f;
+	float gRotation = 0.0f;
+	float gTargetRotation = 180.0f;
+
+	bool grVisible = false;
+	bool grAppearing = false;
+	bool grAnimActive = false;
+	bool grInPhase1 = false;
+	bool grInPhase2 = false;
+	float grOffsetX = -0.5f;
+	float grScaleFactor = 0.0f;
+	float grRotation = 0.0f;
+	float grTargetRotation = 360.0f;
+
+	bool ramVisible = false;
+	bool ramAnimActive = false;
+	bool ramInPhase1 = false;
+	bool ramInPhase2 = false;
+	float ramOffsetX = -0.5f;
+	float ramScaleFactor = 0.0f;
+	float ramRotation = 0.0f;
+	float ramTargetRotation = 360.0f;
+
+	bool prVisible = false;
+	bool prAnimActive = false;
+	bool prInPhase1 = false;
+	bool prInPhase2 = false;
+	float prOffsetX = -0.5f;
+	float prScaleFactor = 0.0f;
+	float prRotation = 0.0f;
+
+	bool fuVisible = false;
+	bool fuAnimActive = false;
+	bool fuInPhase1 = false;
+	bool fuInPhase2 = false;
+	float fuOffsetX = -0.5f;
+	float fuScaleFactor = 0.0f;
+	float fuRotation = 0.0f;
+	float fuTargetRotation = 180.0f;
+
+	bool animacionXCompleta = false;
+};
+
+struct Keyframe {
+	float time;  // Tiempo relativo desde el inicio
+	glm::vec3 position;
+	float scale;
+};
+
+struct SillaKeyframeAnimation {
+	std::vector<Keyframe> keyframes;
+	float currentTime = 0.0f;
+	bool active = false;
+	int currentIndex = 0;
+
+	glm::vec3 interpolatedPosition;
+	float interpolatedScale;
+
+	void start() {
+		currentTime = 0.0f;
+		currentIndex = 0;
+		active = true;
+	}
+
+	void update(float deltaTime) {
+		if (!active || keyframes.size() < 2) return;
+
+		currentTime += deltaTime;
+
+		while (currentIndex < keyframes.size() - 1 &&
+			currentTime > keyframes[currentIndex + 1].time) {
+			currentIndex++;
+		}
+
+		if (currentIndex >= keyframes.size() - 1) {
+			active = false;
+			return;
+		}
+
+		Keyframe& kf1 = keyframes[currentIndex];
+		Keyframe& kf2 = keyframes[currentIndex + 1];
+
+		float localTime = currentTime - kf1.time;
+		float duration = kf2.time - kf1.time;
+		float t = localTime / duration;
+
+		interpolatedPosition = glm::mix(kf1.position, kf2.position, t);
+		interpolatedScale = glm::mix(kf1.scale, kf2.scale, t);
+	}
+};
+
+struct SillaAnimada {
+	glm::vec3 siPos;
+	glm::vec3 snPos;
+	glm::vec3 targetPos;
+	glm::vec3 siPosOriginal; // NUEVA
+	bool siExplotaComoModel1 = false;
+	float siExplosionFactor = 0.0f;
+
+	bool siVisible;
+	bool siMoving;
+	bool siShrinking;
+	bool snVisible;
+	bool snAppearing;
+	bool snReturning;
+	float siScale;
+	float snScale;
+	bool snRegresoTerminado;
+	SillaKeyframeAnimation animacion;
+
+
+	enum class FaseAnimSilla {
+		EscalandoAntesDeMover,
+		SubirAntesDeMover,
+		MoverASalida,
+		DesaparecerSi,
+		AparecerSn,
+		SnMoverAOriginal,
+		SnEscalarOriginal,
+		SnBajarFinal,
+		Completa
+
+		
+
+		
+	};
+
+	FaseAnimSilla fase = FaseAnimSilla::Completa;
+
+
+
+	struct Keyframe {
+		float time;  // Tiempo relativo desde el inicio
+		glm::vec3 position;
+		float scale;
+	};
+
+	struct SillaKeyframeAnimation {
+		std::vector<Keyframe> keyframes;
+		float currentTime = 0.0f;
+		bool active = false;
+		int currentIndex = 0;
+
+		glm::vec3 interpolatedPosition;
+		float interpolatedScale;
+
+		void start() {
+			currentTime = 0.0f;
+			currentIndex = 0;
+			active = true;
+		}
+
+		void update(float deltaTime) {
+			if (!active || keyframes.size() < 2) return;
+
+			currentTime += deltaTime;
+
+			while (currentIndex < keyframes.size() - 1 &&
+				currentTime > keyframes[currentIndex + 1].time) {
+				currentIndex++;
+			}
+
+			if (currentIndex >= keyframes.size() - 1) {
+				active = false;
+				return;
+			}
+
+			Keyframe& kf1 = keyframes[currentIndex];
+			Keyframe& kf2 = keyframes[currentIndex + 1];
+
+			float localTime = currentTime - kf1.time;
+			float duration = kf2.time - kf1.time;
+			float t = localTime / duration;
+
+			interpolatedPosition = glm::mix(kf1.position, kf2.position, t);
+			interpolatedScale = glm::mix(kf1.scale, kf2.scale, t);
+		}
+	};
+	SillaAnimada(glm::vec3 start)
+	{
+
+		siVisible = true;
+		siMoving = false;
+		siShrinking = false;
+		siScale = 4.0f;
+
+		snPos = glm::vec3(11.0f, -1.0f, -10.0f);
+		snScale = 0.0f;
+		snAppearing = false;
+		snReturning = false;
+		snVisible = false;
+		siPos = start;
+		siPosOriginal = start; // GUARDAMOS
+
+		targetPos = glm::vec3(11.0f, siPosOriginal.y + 4.0f, -20.0f);
+
+		snRegresoTerminado = false;
+		
+
+
+	}
+};
+
+
+
+
+
+
+std::vector<SillaAnimada> sillas;
+
+bool hayColision(glm::vec3 nuevaPos, const SillaAnimada& actual)
+{
+	for (const auto& silla : sillas)
+	{
+		if (&silla == &actual) continue; // Ignora la propia silla
+
+		if (silla.siVisible && glm::distance(glm::vec2(silla.siPos.x, silla.siPos.z), glm::vec2(nuevaPos.x, nuevaPos.z)) < 2.0f)
+			return true;
+
+		if (silla.snVisible && glm::distance(glm::vec2(silla.snPos.x, silla.snPos.z), glm::vec2(nuevaPos.x, nuevaPos.z)) < 2.0f)
+			return true;
+	}
+	return false;
+}
+
+
+
+
+std::vector<InstanciaAnimacion> animaciones;
 
 
 // Positions of the point lights
-glm::vec3 pointLightPositions[] = {
-	glm::vec3(0.0f,2.0f, 0.0f),
-	glm::vec3(0.0f,0.0f, 0.0f),
-	glm::vec3(0.0f,0.0f,  0.0f),
-	glm::vec3(0.0f,0.0f, 0.0f)
+glm::vec3 pointLightPositions[9] = {
+	// Fila 1
+	glm::vec3(-10.0f, 5.0f, -20.0f),
+	glm::vec3(0.0f, 5.0f, -20.0f),
+	glm::vec3(10.0f, 5.0f, -20.0f),
+	// Fila 2
+	glm::vec3(-10.0f, 5.0f, -40.0f),
+	glm::vec3(0.0f, 5.0f, -40.0f),
+	glm::vec3(10.0f, 5.0f, -40.0f),
+	// Fila 3
+	glm::vec3(-10.0f, 5.0f, -60.0f),
+	glm::vec3(0.0f, 5.0f, -60.0f),
+	glm::vec3(10.0f, 5.0f, -60.0f)
 };
 
-glm::vec3 ganTranslation(4.0f, 0.0f, 0.0f);  // Traslación general de GAN
+glm::vec3 ganTranslation(0.0f, 0.0f, 0.0f);  // Traslación general de GAN
 
 
 float vertices[] = {
@@ -224,7 +630,10 @@ float vertices[] = {
 
 
 glm::vec3 Light1 = glm::vec3(0);
-//Anim
+// Lights
+bool pointLightsOn = true;
+bool spotLightOn = true;
+// Anim
 float rotBall = 0;
 bool AnimBall = false;
 
@@ -249,7 +658,7 @@ int main()
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);*/
 
 	// Create a GLFWwindow object that we can use for GLFW's functions
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto Laboratorio Computacion Grafica", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Proyecto Laboratorio Computacion Grafica Equipo 11", nullptr, nullptr);
 
 	if (nullptr == window)
 	{
@@ -286,7 +695,7 @@ int main()
 
 	Shader lightingShader("Shader/lighting.vs", "Shader/lighting.frag");
 	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
-	
+
 	//models
 	Model Com((char*)"Models/Com/1.obj");
 	Model Com2((char*)"Models/Comp2/2.obj");
@@ -298,6 +707,20 @@ int main()
 	Model ram((char*)"Models/ram/ram.obj");
 	Model pr((char*)"Models/pr/pr.obj");
 	Model fu((char*)"Models/fu/fu.obj");
+	Model si((char*)"Models/silla/si.obj");
+	Model sn((char*)"Models/sn/sn.obj");
+	Model sal((char*)"Models/salon/salon2.obj");
+	Model PC((char*)"Models/PC/PC.obj");
+	Model pi((char*)"Models/pi/pi.obj");
+	Model ai((char*)"Models/ai/ai.obj");
+	Model bt((char*)"Models/bt/bt.obj");
+	Model l1((char*)"Models/l1/l1.obj");
+	Model l2((char*)"Models/l2/l2.obj");
+	Model l3((char*)"Models/l3/l3.obj");
+	Model l4((char*)"Models/l4/l4.obj");
+	Model l5((char*)"Models/l5/l5.obj");
+	Model l6((char*)"Models/l6/l6.obj");
+	Model te((char*)"Models/te/te.obj");
 
 
 
@@ -325,6 +748,66 @@ int main()
 
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
 
+	// Agregar instancia inicial con GA visible
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -25.8f));
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -30.3f));
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -34.8f));
+
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -25.8f));
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -30.3f));
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -34.8f));
+
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -25.8f));
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -30.3f));
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -34.8f));
+
+
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -48.5f));
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -56.5f));
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -52.5f));
+
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -48.5f));
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -56.5f));
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -52.5f));
+
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -48.5f));
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -56.5f));
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -52.5f));
+
+	// Nuevas instancias sin cambio de posición o escala (solo animación en el lugar)
+	animaciones.emplace_back(glm::vec3(4.0f, -2.3f, -59.0f), true);
+	animaciones.emplace_back(glm::vec3(-3.0f, -2.3f, -59.0f), true);
+	animaciones.emplace_back(glm::vec3(-10.0f, -2.3f, -59.0f), true);
+
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -28.0f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -23.0f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -33.0f));
+
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -28.0f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -23.0f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -33.0f));
+
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -28.0f));
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -23.0f));
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -33.0f));
+
+
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -58.5f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -54.5f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -50.5f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -46.5f));
+
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -58.5f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -54.5f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -50.5f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -46.5f));
+
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -58.5f));
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -54.5f));
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -50.5f));
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -46.5f));
+
+
 	// Game loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -342,19 +825,56 @@ int main()
 		// Clear the colorbuffer
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	   
+
 		// OpenGL options
 		glEnable(GL_DEPTH_TEST);
 
-		
-		
-		
-	
+
+
+
+
 
 		// Use cooresponding shader when setting uniforms/drawing objects
 		lightingShader.Use();
 
-        glUniform1i(glGetUniformLocation(lightingShader.Program, "diffuse"), 0);
+		// manipulación de luces
+		for (int i = 0; i < 9; ++i) {
+			std::string idx = std::to_string(i);
+			float amb = pointLightsOn ? 0.2f : 0.0f;
+			float dif = pointLightsOn ? 0.8f : 0.0f;
+			float spc = pointLightsOn ? 1.0f : 0.0f;
+
+			glUniform3fv(
+				glGetUniformLocation(lightingShader.Program,
+					("pointLights[" + idx + "].position").c_str()),
+				1, glm::value_ptr(pointLightPositions[i]));
+
+			glUniform3f(
+				glGetUniformLocation(lightingShader.Program,
+					("pointLights[" + idx + "].ambient").c_str()),
+				amb, amb, amb);
+			glUniform3f(
+				glGetUniformLocation(lightingShader.Program,
+					("pointLights[" + idx + "].diffuse").c_str()),
+				dif, dif, dif);
+			glUniform3f(
+				glGetUniformLocation(lightingShader.Program,
+					("pointLights[" + idx + "].specular").c_str()),
+				spc, spc, spc);
+
+			glUniform1f(
+				glGetUniformLocation(lightingShader.Program,
+					("pointLights[" + idx + "].constant").c_str()), 1.0f);
+			glUniform1f(
+				glGetUniformLocation(lightingShader.Program,
+					("pointLights[" + idx + "].linear").c_str()), 0.09f);
+			glUniform1f(
+				glGetUniformLocation(lightingShader.Program,
+					("pointLights[" + idx + "].quadratic").c_str()), 0.032f);
+		}
+
+
+		glUniform1i(glGetUniformLocation(lightingShader.Program, "diffuse"), 0);
 		//glUniform1i(glGetUniformLocation(lightingShader.Program, "specular"),1);
 
 		GLint viewPosLoc = glGetUniformLocation(lightingShader.Program, "viewPos");
@@ -363,28 +883,56 @@ int main()
 
 		// Directional light
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"),0.6f,0.6f,0.6f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.6f, 0.6f, 0.6f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.6f, 0.6f, 0.6f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"),0.3f, 0.3f, 0.3f);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.3f, 0.3f, 0.3f);
 
 
-		// Point light 1
-	    glm::vec3 lightColor;
-		lightColor.x= abs(sin(glfwGetTime() *Light1.x));
-		lightColor.y= abs(sin(glfwGetTime() *Light1.y));
-		lightColor.z= sin(glfwGetTime() *Light1.z);
+		// Point lights
 
-		
+		/*glm::vec3 lightColor;
+		lightColor.x = abs(sin(glfwGetTime() * Light1.x));
+		lightColor.y = abs(sin(glfwGetTime() * Light1.y));
+		lightColor.z = sin(glfwGetTime() * Light1.z);
+
+
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].position"), pointLightPositions[0].x, pointLightPositions[0].y, pointLightPositions[0].z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), lightColor.x,lightColor.y, lightColor.z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), lightColor.x,lightColor.y,lightColor.z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), lightColor.x, lightColor.y, lightColor.z);
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), lightColor.x, lightColor.y, lightColor.z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].specular"), 1.0f, 0.2f, 0.2f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].linear"), 0.045f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].quadratic"),0.075f);
+		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].quadratic"), 0.075f);*/
+
+		for (int i = 0; i < 9; ++i) {
+			std::string idx = std::to_string(i);
+			float amb = pointLightsOn ? 0.2f : 0.0f;
+			float dif = pointLightsOn ? 0.8f : 0.0f;
+			float spc = pointLightsOn ? 1.0f : 0.0f;
+
+			glUniform3fv(glGetUniformLocation(lightingShader.Program,
+				("pointLights[" + idx + "].position").c_str()),
+				1, glm::value_ptr(pointLightPositions[i]));
+			glUniform3f(glGetUniformLocation(lightingShader.Program,
+				("pointLights[" + idx + "].ambient").c_str()),
+				amb, amb, amb);
+			glUniform3f(glGetUniformLocation(lightingShader.Program,
+				("pointLights[" + idx + "].diffuse").c_str()),
+				dif, dif, dif);
+			glUniform3f(glGetUniformLocation(lightingShader.Program,
+				("pointLights[" + idx + "].specular").c_str()),
+				spc, spc, spc);
+			glUniform1f(glGetUniformLocation(lightingShader.Program,
+				("pointLights[" + idx + "].constant").c_str()), 1.0f);
+			glUniform1f(glGetUniformLocation(lightingShader.Program,
+				("pointLights[" + idx + "].linear").c_str()), 0.09f);
+			glUniform1f(glGetUniformLocation(lightingShader.Program,
+				("pointLights[" + idx + "].quadratic").c_str()), 0.032f);
+		}
 
 
-		// SpotLight
+		//// SpotLight del proyector on/off
+		
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), camera.GetFront().x, camera.GetFront().y, camera.GetFront().z);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.2f, 0.2f, 0.8f);
@@ -395,7 +943,7 @@ int main()
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.quadratic"), 0.7f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutOff"), glm::cos(glm::radians(12.0f)));
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutOff"), glm::cos(glm::radians(18.0f)));
-		
+
 
 		// Set material properties
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 5.0f);
@@ -416,399 +964,1593 @@ int main()
 
 		glm::mat4 model(1);
 
-	
-		
 
 
-
-		
 
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); // Ahora sí la mandas correctamente
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), explosionFactor);
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
 
+		
+
+		// PANTALLAS 1
+		glm::mat4 groupTransform = glm::mat4(1.0f);
+		groupTransform = glm::translate(groupTransform, glm::vec3(3.5f, 0.45f, -23.5f)); // posición base
+		groupTransform = glm::scale(groupTransform, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform = glm::rotate(groupTransform, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 2
+		glm::mat4 groupTransform1 = glm::mat4(1.0f);
+		groupTransform1 = glm::translate(groupTransform1, glm::vec3(3.5f, 0.45f, -28.0f)); // posición base
+		groupTransform1 = glm::scale(groupTransform1, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform1 = glm::rotate(groupTransform1, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform1 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform1 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 3
+		glm::mat4 groupTransform2 = glm::mat4(1.0f);
+		groupTransform2 = glm::translate(groupTransform2, glm::vec3(3.5f, 0.45f, -32.5f)); // posición base
+		groupTransform2 = glm::scale(groupTransform2, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform2 = glm::rotate(groupTransform2, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform2 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform2 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 4
+		glm::mat4 groupTransform3 = glm::mat4(1.0f);
+		groupTransform3 = glm::translate(groupTransform3, glm::vec3(-3.5f, 0.45f, -32.5f)); // posición base
+		groupTransform3 = glm::scale(groupTransform3, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform3 = glm::rotate(groupTransform3, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform3 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform3 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 5
+		glm::mat4 groupTransform4 = glm::mat4(1.0f);
+		groupTransform4 = glm::translate(groupTransform4, glm::vec3(-3.5f, 0.45f, -28.0f)); // posición base
+		groupTransform4 = glm::scale(groupTransform4, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform4 = glm::rotate(groupTransform4, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform4 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform4 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 6
+		glm::mat4 groupTransform5 = glm::mat4(1.0f);
+		groupTransform5 = glm::translate(groupTransform5, glm::vec3(-3.5f, 0.45f, -23.5f)); // posición base
+		groupTransform5 = glm::scale(groupTransform5, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform5 = glm::rotate(groupTransform5, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform5 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform5 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 7
+		glm::mat4 groupTransform6 = glm::mat4(1.0f);
+		groupTransform6 = glm::translate(groupTransform6, glm::vec3(-10.5f, 0.45f, -23.5f)); // posición base
+		groupTransform6 = glm::scale(groupTransform6, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform6 = glm::rotate(groupTransform6, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform6 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform6 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+
+		// PANTALLAS 8
+		glm::mat4 groupTransform7 = glm::mat4(1.0f);
+		groupTransform7 = glm::translate(groupTransform7, glm::vec3(-10.5f, 0.45f, -28.0f)); // posición base
+		groupTransform7 = glm::scale(groupTransform7, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform7 = glm::rotate(groupTransform7, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform7 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform7 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 9
+		glm::mat4 groupTransform8 = glm::mat4(1.0f);
+		groupTransform8 = glm::translate(groupTransform8, glm::vec3(-10.5f, 0.45f, -32.5f)); // posición base
+		groupTransform8 = glm::scale(groupTransform8, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform8 = glm::rotate(groupTransform8, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform8 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform8 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+
+		// PANTALLAS 10
+		glm::mat4 groupTransform9 = glm::mat4(1.0f);
+		groupTransform9 = glm::translate(groupTransform9, glm::vec3(3.5f, 0.45f, -58.5f)); // posición base
+		groupTransform9 = glm::scale(groupTransform9, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform9 = glm::rotate(groupTransform9, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform9 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform9 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 11
+		glm::mat4 groupTransform10 = glm::mat4(1.0f);
+		groupTransform10 = glm::translate(groupTransform10, glm::vec3(3.5f, 0.45f, -54.5f)); // posición base
+		groupTransform10 = glm::scale(groupTransform10, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform10 = glm::rotate(groupTransform10, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform10 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform10 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 12
+		glm::mat4 groupTransform11 = glm::mat4(1.0f);
+		groupTransform11 = glm::translate(groupTransform11, glm::vec3(3.5f, 0.45f, -50.5f)); // posición base
+		groupTransform11 = glm::scale(groupTransform11, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform11 = glm::rotate(groupTransform11, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform11 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform11 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 13
+		glm::mat4 groupTransform12 = glm::mat4(1.0f);
+		groupTransform12 = glm::translate(groupTransform12, glm::vec3(3.5f, 0.45f, -46.5f)); // posición base
+		groupTransform12 = glm::scale(groupTransform12, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform12 = glm::rotate(groupTransform12, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform12 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform12 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 14
+		glm::mat4 groupTransform13 = glm::mat4(1.0f);
+		groupTransform13 = glm::translate(groupTransform13, glm::vec3(-3.5f, 0.45f, -58.5f)); // posición base
+		groupTransform13 = glm::scale(groupTransform13, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform13 = glm::rotate(groupTransform13, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform13 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform13 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 15
+		glm::mat4 groupTransform14 = glm::mat4(1.0f);
+		groupTransform14 = glm::translate(groupTransform14, glm::vec3(-3.5f, 0.45f, -54.5f)); // posición base
+		groupTransform14 = glm::scale(groupTransform14, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform14 = glm::rotate(groupTransform14, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform14 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform14 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 16
+		glm::mat4 groupTransform15 = glm::mat4(1.0f);
+		groupTransform15 = glm::translate(groupTransform15, glm::vec3(-3.5f, 0.45f, -50.5f)); // posición base
+		groupTransform15 = glm::scale(groupTransform15, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform15 = glm::rotate(groupTransform15, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform15 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform15 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 17
+		glm::mat4 groupTransform16 = glm::mat4(1.0f);
+		groupTransform16 = glm::translate(groupTransform16, glm::vec3(-3.5f, 0.45f, -46.5f)); // posición base
+		groupTransform16 = glm::scale(groupTransform16, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform16 = glm::rotate(groupTransform16, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform16 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform16 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 18
+		glm::mat4 groupTransform17 = glm::mat4(1.0f);
+		groupTransform17 = glm::translate(groupTransform17, glm::vec3(-10.5f, 0.45f, -58.5f)); // posición base
+		groupTransform17 = glm::scale(groupTransform17, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform17 = glm::rotate(groupTransform17, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform17 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform17 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 19
+		glm::mat4 groupTransform18 = glm::mat4(1.0f);
+		groupTransform18 = glm::translate(groupTransform18, glm::vec3(-10.5f, 0.45f, -54.5f)); // posición base
+		groupTransform18 = glm::scale(groupTransform18, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform18 = glm::rotate(groupTransform18, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform18 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform18 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 20
+		glm::mat4 groupTransform19 = glm::mat4(1.0f);
+		groupTransform19 = glm::translate(groupTransform19, glm::vec3(-10.5f, 0.45f, -50.5f)); // posición base
+		groupTransform19 = glm::scale(groupTransform19, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform19 = glm::rotate(groupTransform19, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform19 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform19 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+		// PANTALLAS 21
+		glm::mat4 groupTransform20 = glm::mat4(1.0f);
+		groupTransform20 = glm::translate(groupTransform20, glm::vec3(-10.5f, 0.45f, -46.5f)); // posición base
+		groupTransform20 = glm::scale(groupTransform20, glm::vec3(2.5f)); // escala del conjunto
+		groupTransform20 = glm::rotate(groupTransform20, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // rotación del conjunto
+
+		// MODEL 1 - Explosion Animation
+		if (model1Visible && explosionFactor < 1.7f)
+		{
+			glm::mat4 explodedModel = glm::mat4(1.0f);
+
+			float explosionScale = 1.0f - explosionFactor / 1.7f;
+			float baseOffset = 0.8f;
+			float verticalCompensate = baseOffset * (1.0f - explosionScale);
+
+			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, verticalCompensate, 0.0f)); // relativa a la base
+			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale));
+			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+			glm::mat4 finalModel1 = groupTransform20 * explodedModel;  // combinación padre + local
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel1));
+			Com.Draw(lightingShader);
+		}
+
+		// MODEL 2 - Aparición animada
+		if (model2Visible)
+		{
+			glm::mat4 model2 = glm::mat4(1.0f);
+			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
+
+			glm::mat4 finalModel2 = groupTransform20 * model2;  // también relativo al grupo
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(finalModel2));
+			Com2.Draw(lightingShader);
+		}
+
+
+
+		//FILA 1 VENTANA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(4.0f, -2.0f, -56.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 1.2 VENTANA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(4.0f, -2.0f, -49.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 2 VENTANA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-3.0f, -2.0f, -56.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 2.2 VENTANA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-3.0f, -2.0f, -49.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 3 VENTANA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-10.0f, -2.0f, -56.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 3.2 VENTANA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-10.0f, -2.0f, -49.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+
+		//FILA 1 PUERTA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(4.0f, -2.0f, -25.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 1.2 PUERTA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(4.0f, -2.0f, -32.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 2 PUERTA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-3.0f, -2.0f, -25.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 2.2 PUERTA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-3.0f, -2.0f, -32.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+
+		//FILA 3 PUERTA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-10.0f, -2.0f, -25.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+		//FILA 3.2 PUERTA
+		{
+			glm::mat4 modelMe = glm::mat4(1.0f);
+			modelMe = glm::translate(modelMe, glm::vec3(-10.0f, -2.0f, -32.0f)); // puedes ajustar la posición
+			modelMe = glm::rotate(modelMe, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
+			modelMe = glm::scale(modelMe, glm::vec3(7.5f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
+
+			me.Draw(lightingShader);
+		}
+
+
+
+		// ------------------ PI ------------------
+		{
+			glm::mat4 modelPi = glm::mat4(1.0f);  // Matriz identidad
+			modelPi = glm::translate(modelPi, glm::vec3(-18.0f, 3.5f, -40.0f)); // Posición del modelo
+			modelPi = glm::rotate(modelPi, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modelPi = glm::scale(modelPi, glm::vec3(10.5f, 8.0f, 10.5f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPi));
+
+			pi.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		// ------------------ AI ------------------
+		{
+			glm::mat4 modelai = glm::mat4(1.0f);  // Matriz identidad
+			modelai = glm::translate(modelai, glm::vec3(-3.5f, 6.5f, -60.0f)); // Posición del modelo
+			modelai = glm::rotate(modelai, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modelai = glm::scale(modelai, glm::vec3(5.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelai));
+
+			ai.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		// ------------------ BT ------------------
+		{
+			glm::mat4 modelbt = glm::mat4(1.0f);  // Matriz identidad
+			modelbt = glm::translate(modelbt, glm::vec3(-3.0f, 3.5f, -60.0f)); // Posición del modelo
+			modelbt = glm::rotate(modelbt, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modelbt = glm::scale(modelbt, glm::vec3(2.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelbt));
+
+			bt.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		// ------------------ l1 ------------------
+		{
+			glm::mat4 modell1 = glm::mat4(1.0f);  // Matriz identidad
+			modell1 = glm::translate(modell1, glm::vec3(-2.0f, 5.0f, -60.5f)); // Posición del modelo
+			modell1 = glm::rotate(modell1, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modell1 = glm::scale(modell1, glm::vec3(1.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modell1));
+
+			l1.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		// ------------------ 12 ------------------
+		{
+			glm::mat4 modell2 = glm::mat4(1.0f);  // Matriz identidad
+			modell2 = glm::translate(modell2, glm::vec3(-3.5f, 5.0f, -60.5f)); // Posición del modelo
+			modell2 = glm::rotate(modell2, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modell2 = glm::scale(modell2, glm::vec3(1.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modell2));
+
+			l2.Draw(lightingShader);  // Dibuja el modelo
+		}
+		// ------------------ 13 ------------------
+		{
+			glm::mat4 modell3 = glm::mat4(1.0f);  // Matriz identidad
+			modell3 = glm::translate(modell3, glm::vec3(-18.0f, 7.0f, -37.0)); // Posición del modelo
+			modell3 = glm::rotate(modell3, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modell3 = glm::scale(modell3, glm::vec3(1.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modell3));
+
+			l3.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		// ------------------ 14 ------------------
+		{
+			glm::mat4 modell4 = glm::mat4(1.0f);  // Matriz identidad
+			modell4 = glm::translate(modell4, glm::vec3(-18.0f, 7.0f, -38.0)); // Posición del modelo
+			modell4 = glm::rotate(modell4, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modell4 = glm::scale(modell4, glm::vec3(1.5f, 1.0f, 1.5f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modell4));
+
+			l4.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		// ------------------ 15 ------------------
+		{
+			glm::mat4 modell5 = glm::mat4(1.0f);  // Matriz identidad
+			modell5 = glm::translate(modell5, glm::vec3(-18.0f, 7.0f, -43.0)); // Posición del modelo
+			modell5 = glm::rotate(modell5, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modell5 = glm::scale(modell5, glm::vec3(2.0f, 1.5f, 2.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modell5));
+
+			l5.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		// ------------------ 16 ------------------
+		{
+			glm::mat4 modell6 = glm::mat4(1.0f);  // Matriz identidad
+			modell6 = glm::translate(modell6, glm::vec3(-18.3f, 3.5f, -29.5)); // Posición del modelo
+			modell6 = glm::rotate(modell6, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
+			modell6 = glm::scale(modell6, glm::vec3(3.0f, 2.5f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modell6));
+
+			l6.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		// ------------------ te ------------------
+		{
+			glm::mat4 modelte = glm::mat4(1.0f);  // Matriz identidad
+			modelte = glm::translate(modelte, glm::vec3(4.8f, -0.5f, -23.5f)); // Posición del modelo
+			modelte = glm::rotate(modelte, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte = glm::scale(modelte, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte1 = glm::mat4(1.0f);  // Matriz identidad
+			modelte1 = glm::translate(modelte1, glm::vec3(4.8f, -0.5f, -28.0f)); // Posición del modelo
+			modelte1 = glm::rotate(modelte1, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte1 = glm::scale(modelte1, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte1));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte2 = glm::mat4(1.0f);  // Matriz identidad
+			modelte2 = glm::translate(modelte2, glm::vec3(4.8f, -0.5f, -32.5f)); // Posición del modelo
+			modelte2 = glm::rotate(modelte2, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte2 = glm::scale(modelte2, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte2));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte3 = glm::mat4(1.0f);  // Matriz identidad
+			modelte3 = glm::translate(modelte3, glm::vec3(-2.2f, -0.5f, -23.5f)); // Posición del modelo
+			modelte3 = glm::rotate(modelte3, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte3 = glm::scale(modelte3, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte3));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte4 = glm::mat4(1.0f);  // Matriz identidad
+			modelte4 = glm::translate(modelte4, glm::vec3(-2.2f, -0.5f, -28.0f)); // Posición del modelo
+			modelte4 = glm::rotate(modelte4, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte4 = glm::scale(modelte4, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte4));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte5 = glm::mat4(1.0f);  // Matriz identidad
+			modelte5 = glm::translate(modelte5, glm::vec3(-2.2f, -0.5f, -32.5f)); // Posición del modelo
+			modelte5 = glm::rotate(modelte5, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte5 = glm::scale(modelte5, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte5));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte6 = glm::mat4(1.0f);  // Matriz identidad
+			modelte6 = glm::translate(modelte6, glm::vec3(-9.2f, -0.5f, -23.5f)); // Posición del modelo
+			modelte6 = glm::rotate(modelte6, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte6 = glm::scale(modelte6, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte6));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte7 = glm::mat4(1.0f);  // Matriz identidad
+			modelte7 = glm::translate(modelte7, glm::vec3(-9.2f, -0.5f, -28.0f)); // Posición del modelo
+			modelte7 = glm::rotate(modelte7, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte7 = glm::scale(modelte7, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte7));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte8 = glm::mat4(1.0f);  // Matriz identidad
+			modelte8 = glm::translate(modelte8, glm::vec3(-9.2f, -0.5f, -32.5f)); // Posición del modelo
+			modelte8 = glm::rotate(modelte8, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte8 = glm::scale(modelte8, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte8));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+
+
+		// ------------------ te ------------------
+		{
+			glm::mat4 modelte9 = glm::mat4(1.0f);  // Matriz identidad
+			modelte9 = glm::translate(modelte9, glm::vec3(5.0f, -0.5f, -58.0f)); // Posición del modelo
+			modelte9 = glm::rotate(modelte9, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte9 = glm::scale(modelte9, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte9));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte10 = glm::mat4(1.0f);  // Matriz identidad
+			modelte10 = glm::translate(modelte10, glm::vec3(4.8f, -0.5f, -54.5f)); // Posición del modelo
+			modelte10 = glm::rotate(modelte10, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte10 = glm::scale(modelte10, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte10));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte12 = glm::mat4(1.0f);  // Matriz identidad
+			modelte12 = glm::translate(modelte12, glm::vec3(4.8f, -0.5f, -50.5f)); // Posición del modelo
+			modelte12 = glm::rotate(modelte12, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte12 = glm::scale(modelte12, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte12));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte1R = glm::mat4(1.0f);  // Matriz identidad
+			modelte1R = glm::translate(modelte1R, glm::vec3(5.0f, -0.5f, -47.0f)); // Posición del modelo
+			modelte1R = glm::rotate(modelte1R, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte1R = glm::scale(modelte1R, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte1R));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte13 = glm::mat4(1.0f);  // Matriz identidad
+			modelte13 = glm::translate(modelte13, glm::vec3(-2.0f, -0.5f, -58.0f)); // Posición del modelo
+			modelte13 = glm::rotate(modelte13, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte13 = glm::scale(modelte13, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte13));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte14 = glm::mat4(1.0f);  // Matriz identidad
+			modelte14 = glm::translate(modelte14, glm::vec3(-2.2f, -0.5f, -54.5f)); // Posición del modelo
+			modelte14 = glm::rotate(modelte14, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte14 = glm::scale(modelte14, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte14));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte15 = glm::mat4(1.0f);  // Matriz identidad
+			modelte15 = glm::translate(modelte15, glm::vec3(-2.2f, -0.5f, -50.5f)); // Posición del modelo
+			modelte15 = glm::rotate(modelte15, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte15 = glm::scale(modelte15, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte15));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte1E = glm::mat4(1.0f);  // Matriz identidad
+			modelte1E = glm::translate(modelte1E, glm::vec3(-2.0f, -0.5f, -47.0f)); // Posición del modelo
+			modelte1E = glm::rotate(modelte1E, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte1E = glm::scale(modelte1E, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte1E));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+		{
+			glm::mat4 modelte16 = glm::mat4(1.0f);  // Matriz identidad
+			modelte16 = glm::translate(modelte16, glm::vec3(-9.0f, -0.5f, -58.0f)); // Posición del modelo
+			modelte16 = glm::rotate(modelte16, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte16 = glm::scale(modelte16, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte16));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte17 = glm::mat4(1.0f);  // Matriz identidad
+			modelte17 = glm::translate(modelte17, glm::vec3(-9.2f, -0.5f, -54.5f)); // Posición del modelo
+			modelte17 = glm::rotate(modelte17, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte17 = glm::scale(modelte17, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte17));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte18 = glm::mat4(1.0f);  // Matriz identidad
+			modelte18 = glm::translate(modelte18, glm::vec3(-9.2f, -0.5f, -50.5f)); // Posición del modelo
+			modelte18 = glm::rotate(modelte18, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte18 = glm::scale(modelte18, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte18));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+		{
+			glm::mat4 modelte1T = glm::mat4(1.0f);  // Matriz identidad
+			modelte1T = glm::translate(modelte1T, glm::vec3(-9.0f, -0.5f, -47.0f)); // Posición del modelo
+			modelte1T = glm::rotate(modelte1T, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
+			modelte1T = glm::scale(modelte1T, glm::vec3(2.0f, 3.0f, 3.0f));  // Escala fija
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelte1T));
+
+			te.Draw(lightingShader);  // Dibuja el modelo
+		}
+
+
+		for (const auto& instancia : animaciones)
+		{
+			glm::vec3 posicionY = instancia.animacionEstatica ?
+				instancia.posicion :  // usa directamente la Y del vector `posicion`
+				glm::vec3(instancia.posicion.x, instancia.translationY, instancia.posicion.z);
+
+
+
+			// ------------------ GA ------------------
+			if (instancia.gaVisible)
+			{
+				glm::mat4 explodedGA = glm::mat4(1.0f);
+
+				glm::vec3 gaPos = instancia.animacionEstatica
+					? instancia.posicion
+					: glm::vec3(instancia.posicion.x, 0.5f, instancia.posicion.z);
+
+				explodedGA = glm::translate(explodedGA, gaPos);
+				explodedGA = glm::scale(explodedGA, glm::vec3(
+					2.0f * instancia.gaExplosionFactor,
+					2.0f * instancia.gaExplosionFactor,
+					2.0f * instancia.gaExplosionFactor
+				));
+				explodedGA = glm::rotate(explodedGA, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+				glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
+				ga.Draw(lightingShader);
+			}
+
+
+			// ------------------ GAN ------------------
+			if (instancia.ganVisible)
+			{
+				glm::mat4 modelGan = glm::mat4(1.0f);
+				modelGan = glm::translate(modelGan, posicionY);
+				modelGan = glm::rotate(modelGan, glm::radians(globalRotationX), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelGan = glm::scale(modelGan, instancia.escala);
+				modelGan = glm::rotate(modelGan, glm::radians(instancia.ganRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelGan = glm::scale(modelGan, glm::vec3(instancia.ganScaleFactor));
+
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelGan));
+				gan.Draw(lightingShader);
+			}
+
+			// ------------------ G ------------------
+			if (instancia.gVisible)
+			{
+				glm::mat4 modelG = glm::mat4(1.0f);
+				modelG = glm::translate(modelG, posicionY);
+				modelG = glm::rotate(modelG, glm::radians(globalRotationX), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelG = glm::scale(modelG, instancia.escala);
+				modelG = glm::translate(modelG, ganTranslation + glm::vec3(instancia.gOffsetX, 0.0f, 0.0f));
+				modelG = glm::rotate(modelG, glm::radians(instancia.gRotation), glm::vec3(1.0f, 0.0f, 0.0f));
+				modelG = glm::rotate(modelG, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+				modelG = glm::scale(modelG, glm::vec3(instancia.gScaleFactor * 0.7f));
+
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelG));
+				g.Draw(lightingShader);
+			}
+
+			// ------------------ GR ------------------
+			if (instancia.grVisible)
+			{
+				glm::mat4 modelGR = glm::mat4(1.0f);
+				modelGR = glm::translate(modelGR, posicionY);
+				modelGR = glm::rotate(modelGR, glm::radians(globalRotationX), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelGR = glm::scale(modelGR, instancia.escala);
+				modelGR = glm::translate(modelGR, ganTranslation + glm::vec3(instancia.grOffsetX - 0.05f, 0.0f, -0.15f));
+				modelGR = glm::rotate(modelGR, glm::radians(instancia.grRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelGR = glm::rotate(modelGR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelGR = glm::rotate(modelGR, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+				modelGR = glm::rotate(modelGR, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				modelGR = glm::scale(modelGR, glm::vec3(0.5f * instancia.grScaleFactor));
+
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelGR));
+				gr.Draw(lightingShader);
+			}
+
+			// ------------------ RAM ------------------
+			if (instancia.ramVisible)
+			{
+				glm::mat4 modelRAM = glm::mat4(1.0f);
+				modelRAM = glm::translate(modelRAM, posicionY);
+				modelRAM = glm::rotate(modelRAM, glm::radians(globalRotationX), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelRAM = glm::scale(modelRAM, instancia.escala);
+				modelRAM = glm::translate(modelRAM, ganTranslation + glm::vec3(instancia.ramOffsetX - 0.02f, -0.25f, -0.06f));
+				modelRAM = glm::rotate(modelRAM, glm::radians(instancia.ramRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelRAM = glm::rotate(modelRAM, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelRAM = glm::rotate(modelRAM, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				modelRAM = glm::scale(modelRAM, glm::vec3(0.3f * instancia.ramScaleFactor));
+
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelRAM));
+				ram.Draw(lightingShader);
+			}
+
+			// ------------------ PR ------------------
+			if (instancia.prVisible)
+			{
+				glm::mat4 modelPR = glm::mat4(1.0f);
+				modelPR = glm::translate(modelPR, posicionY);
+				modelPR = glm::rotate(modelPR, glm::radians(globalRotationX), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelPR = glm::scale(modelPR, instancia.escala);
+				modelPR = glm::translate(modelPR, ganTranslation + glm::vec3(instancia.prOffsetX + 0.012f, -0.19f, -0.18f));
+				modelPR = glm::rotate(modelPR, glm::radians(instancia.prRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelPR = glm::rotate(modelPR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelPR = glm::rotate(modelPR, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				modelPR = glm::scale(modelPR, glm::vec3(0.07f * instancia.prScaleFactor));
+
+				// Calcula posición y dirección del haz
+				glm::vec3 projPos = glm::vec3(modelPR * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+				glm::vec3 projDir = glm::normalize(glm::vec3(modelPR * glm::vec4(0.0f, -1.0f, -1.0f, 0.0f)));
+
+				if (spotLightOn) {
+					glUniform3fv(glGetUniformLocation(lightingShader.Program, "spotLight.position"), 1, glm::value_ptr(projPos));
+					glUniform3fv(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), 1, glm::value_ptr(projDir));
+					glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.0f, 0.0f, 0.0f);
+					glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.diffuse"), 1.0f, 1.0f, 1.0f);
+					glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.specular"), 1.0f, 1.0f, 1.0f);
+					glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutOff"), glm::cos(glm::radians(15.0f)));
+					glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutOff"), glm::cos(glm::radians(25.0f)));
+				}
+				else {
+					// misma posición/dirección pero sin intensidad
+					glUniform3fv(glGetUniformLocation(lightingShader.Program, "spotLight.position"), 1, glm::value_ptr(projPos));
+					glUniform3fv(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), 1, glm::value_ptr(projDir));
+					glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.0f, 0.0f, 0.0f);
+					glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.diffuse"), 0.0f, 0.0f, 0.0f);
+					glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.specular"), 0.0f, 0.0f, 0.0f);
+					glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutOff"), glm::cos(glm::radians(15.0f)));
+					glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutOff"), glm::cos(glm::radians(25.0f)));
+				}
+
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPR));
+				pr.Draw(lightingShader);  // Dibujo proyector
+			}
+
+			
+			
+			//if (instancia.prVisible)
+			//{
+			//	glm::mat4 modelPR = glm::mat4(1.0f);
+			//	modelPR = glm::translate(modelPR, posicionY);
+			//	modelPR = glm::rotate(modelPR, glm::radians(globalRotationX), glm::vec3(0.0f, 1.0f, 0.0f));
+			//	modelPR = glm::scale(modelPR, instancia.escala);
+			//	modelPR = glm::translate(modelPR, ganTranslation + glm::vec3(instancia.prOffsetX + 0.012f, -0.19f, -0.18f));
+			//	modelPR = glm::rotate(modelPR, glm::radians(instancia.prRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+			//	modelPR = glm::rotate(modelPR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			//	modelPR = glm::rotate(modelPR, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+			//	modelPR = glm::scale(modelPR, glm::vec3(0.07f * instancia.prScaleFactor));
+
+			//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPR));
+			//	pr.Draw(lightingShader);	//Dibujo proyector
+			//}
+
+			// ------------------ FU ------------------
+			if (instancia.fuVisible)
+			{
+				glm::mat4 modelFU = glm::mat4(1.0f);
+				modelFU = glm::translate(modelFU, posicionY);
+				modelFU = glm::rotate(modelFU, glm::radians(globalRotationX), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelFU = glm::scale(modelFU, instancia.escala);
+				modelFU = glm::translate(modelFU, ganTranslation + glm::vec3(instancia.fuOffsetX - 0.2f, -0.26f, -0.3f));
+				modelFU = glm::rotate(modelFU, glm::radians(instancia.fuRotation), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelFU = glm::rotate(modelFU, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelFU = glm::rotate(modelFU, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+				modelFU = glm::rotate(modelFU, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+				modelFU = glm::scale(modelFU, glm::vec3(0.35f * instancia.fuScaleFactor));
+
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelFU));
+				fu.Draw(lightingShader);
+			}
+		}
+
+
+
+
+		//
+
+		//		//DIBUJO DE SALON
+
+		if (true)  // Puedes agregar condiciones si lo quieres mostrar opcionalmente
+		{
+			glm::mat4 modelSalon = glm::mat4(1.0f);  // Matriz identidad
+
+			// No hay traslación, rotación ni escala (centrado y a tamaño original)
+			// Si quieres escalar un poco:
+			// modelSalon = glm::scale(modelSalon, glm::vec3(0.5f));
+			modelSalon = glm::translate(modelSalon, glm::vec3(0.0f, -4.0f, -40.0f)); // Baja un poco el modelo
+			modelSalon = glm::rotate(modelSalon, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Gira
+			modelSalon = glm::scale(modelSalon, glm::vec3(1.0f)); // Reduce a la mitad
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSalon));
+
+			sal.Draw(lightingShader);
+		}
 
 
 
 
 
 
-//
-//		// Dibujo de monitor con su cambio
-//		if (model1Visible && explosionFactor < 1.7f)
-//		{
-//			glm::mat4 explodedModel = glm::mat4(1.0f);
-//
-//			// 🔁 TRUCO: traslada hacia arriba antes de escalar, y regresa después para simular explosión desde la base
-//			float baseOffset = 0.8f; // Ajusta este valor según el punto base de tu modelo
-//			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, baseOffset, 0.0f));
-//			explodedModel = glm::scale(explodedModel, glm::vec3(1.0f - explosionFactor / 1.7f));
-//			explodedModel = glm::translate(explodedModel, glm::vec3(0.0f, -baseOffset, 0.0f));
-//
-//			// Rotación fija del modelo
-//			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//
-//			// Enviar al shader y dibujar
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
-//			Com.Draw(lightingShader);
-//		}
-//		
-//		if (model2Visible)
-//		{
-//			glm::mat4 model2 = glm::mat4(1.0f);
-//			model2 = glm::translate(model2, glm::vec3(0.0f, 0.0f, 0.0f));
-//
-//			// Aplica rotación mientras aparece
-//			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
-//			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
-//
-//			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-//			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-//			Com2.Draw(lightingShader);
-//		}
-//
-//		
-//		
-//		
-//		// Dibujo segundo monitor con su cambio
-//		if (model1Visible && explosionFactor < 1.7f)
-//		{
-//			glm::mat4 explodedModel = glm::mat4(1.0f);
-//
-//			// 🔁 Explosión desde la base hacia arriba, sin colapsar hacia el centro
-//			float explosionScale = 1.0f - explosionFactor / 1.7f;
-//			float baseOffset = 0.8f; // base original del modelo
-//			float verticalCompensate = baseOffset * (1.0f - explosionScale); // lo que sube
-//
-//			// Coloca el modelo más arriba al escalar, para que no traspase el piso
-//			explodedModel = glm::translate(explodedModel, glm::vec3(-1.9f, verticalCompensate, 0.0f));
-//			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale, explosionScale, explosionScale));
-//			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//
-//			// Enviar al shader y dibujar
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
-//			Com.Draw(lightingShader);
-//		}
-//
-//
-//		if (model2Visible)
-//		{
-//			glm::mat4 model2 = glm::mat4(1.0f);
-//			model2 = glm::translate(model2, glm::vec3(-1.9f, 0.0f, 0.0f));
-//
-//			// Aplica rotación mientras aparece
-//			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
-//			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
-//
-//			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-//			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-//			Com2.Draw(lightingShader);
-//		}
-//
-//		// Dibujo tercer monitor con su cambio
-//		if (model1Visible && explosionFactor < 1.7f)
-//		{
-//			glm::mat4 explodedModel = glm::mat4(1.0f);
-//
-//			// 🔁 Explosión desde la base hacia arriba, sin colapsar hacia el centro
-//			float explosionScale = 1.0f - explosionFactor / 1.7f;
-//			float baseOffset = 0.8f; // base original del modelo
-//			float verticalCompensate = baseOffset * (1.0f - explosionScale); // lo que sube
-//
-//			// Coloca el modelo más arriba al escalar, para que no traspase el piso
-//			explodedModel = glm::translate(explodedModel, glm::vec3(1.9f, verticalCompensate, 0.0f));
-//			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale, explosionScale, explosionScale));
-//			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//
-//			// Enviar al shader y dibujar
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
-//			Com.Draw(lightingShader);
-//		}
-//
-//
-//		if (model2Visible)
-//		{
-//			glm::mat4 model2 = glm::mat4(1.0f);
-//			model2 = glm::translate(model2, glm::vec3(1.9f, 0.0f, 0.0f));
-//
-//			// Aplica rotación mientras aparece
-//			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
-//			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
-//
-//			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-//			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-//			Com2.Draw(lightingShader);
-//		}
-//
-//		// Dibujo cuarto monitor con su cambio
-//		if (model1Visible && explosionFactor < 1.7f)
-//		{
-//			glm::mat4 explodedModel = glm::mat4(1.0f);
-//
-//			// 🔁 Explosión desde la base hacia arriba, sin colapsar hacia el centro
-//			float explosionScale = 1.0f - explosionFactor / 1.7f;
-//			float baseOffset = 0.8f; // base original del modelo
-//			float verticalCompensate = baseOffset * (1.0f - explosionScale); // lo que sube
-//
-//			// Coloca el modelo más arriba al escalar, para que no traspase el piso
-//			explodedModel = glm::translate(explodedModel, glm::vec3(3.9f, verticalCompensate, 0.0f));
-//			explodedModel = glm::scale(explodedModel, glm::vec3(explosionScale, explosionScale, explosionScale));
-//			explodedModel = glm::rotate(explodedModel, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//
-//			// Enviar al shader y dibujar
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedModel));
-//			Com.Draw(lightingShader);
-//		}
-//
-//
-//		if (model2Visible)
-//		{
-//			glm::mat4 model2 = glm::mat4(1.0f);
-//			model2 = glm::translate(model2, glm::vec3(3.9f, 0.0f, 0.0f));
-//
-//			// Aplica rotación mientras aparece
-//			model2 = glm::rotate(model2, glm::radians(model2Rotation), glm::vec3(0.0f, 1.0f, 0.0f));
-//			model2 = glm::scale(model2, glm::vec3(model2ScaleFactor));
-//
-//			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-//			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model2));
-//			Com2.Draw(lightingShader);
-//		}
-//		
-//		
-//		
-//		
-//		
-//		
-//		
-//		
-//		
-//		
-//		// Dibujo de la mesa
-//		{
-//			glm::mat4 modelMe = glm::mat4(1.0f);
-//			modelMe = glm::translate(modelMe, glm::vec3(-0.7f, -1.05f, 0.0f)); // puedes ajustar la posición
-//			modelMe = glm::rotate(modelMe, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
-//			modelMe = glm::scale(modelMe, glm::vec3(escalaX, escalaY, escalaZ));
-//
-//			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
-//			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
-//
-//			me.Draw(lightingShader);
-//		}
-//
-//		{
-//			glm::mat4 modelMe = glm::mat4(1.0f);
-//			modelMe = glm::translate(modelMe, glm::vec3(3.05f, -1.05f, 0.0f)); // puedes ajustar la posición
-//			modelMe = glm::rotate(modelMe, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // sin rotación
-//			modelMe = glm::scale(modelMe, glm::vec3(escalaX, escalaY, escalaZ));
-//
-//			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f); // sin explosión
-//			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);       // sin transparencia
-//			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMe));
-//
-//			me.Draw(lightingShader);
-//		}
-//
-//
-//
-//
-//		
-////Dibujamos la PC vieja
-//if (gaVisible)
-//{
-//	glm::mat4 explodedGA = glm::mat4(1.0f);
-//	float baseOffset = 0.8f;
-//
-//	// Aparece con escala normal si aún no se ha inflado
-//	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
-//	float scaleY = 1.0f;
-//
-//	float verticalCompensate = baseOffset * (1.0f - scaleY);
-//	explodedGA = glm::translate(explodedGA, glm::vec3(-1.0f, 0.09f + verticalCompensate, 0.0f));
-//
-//	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
-//	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//
-//	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-//	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
-//	ga.Draw(lightingShader);
-//}
-//
-//
-////Dibujamos la PC vieja
-//if (gaVisible)
-//{
-//	glm::mat4 explodedGA = glm::mat4(1.0f);
-//	float baseOffset = 0.8f;
-//
-//	// Aparece con escala normal si aún no se ha inflado
-//	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
-//	float scaleY = 1.0f;
-//
-//	float verticalCompensate = baseOffset * (1.0f - scaleY);
-//	explodedGA = glm::translate(explodedGA, glm::vec3(0.98f, 0.09f + verticalCompensate, 0.0f));
-//
-//	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
-//	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//
-//	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-//	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
-//	ga.Draw(lightingShader);
-//}
-//
-//// Dibujamos la PC vieja
-//if (gaVisible)
-//{
-//	glm::mat4 explodedGA = glm::mat4(1.0f);
-//	float baseOffset = 0.8f;
-//
-//	// Aparece con escala normal si aún no se ha inflado
-//	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
-//	float scaleY = 1.0f;
-//
-//	float verticalCompensate = baseOffset * (1.0f - scaleY);
-//	explodedGA = glm::translate(explodedGA, glm::vec3(2.98f, 0.09f + verticalCompensate, 0.0f));
-//
-//	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
-//	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//
-//	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-//	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
-//	ga.Draw(lightingShader);
-//}
-//
-//// Dibujamos la PC vieja
-//if (gaVisible)
-//{
-//	glm::mat4 explodedGA = glm::mat4(1.0f);
-//	float baseOffset = 0.8f;
-//
-//	// Aparece con escala normal si aún no se ha inflado
-//	float scaleXZ = (!gaExplosionActive && gaExplosionFactor <= 1.0f) ? 1.0f : gaExplosionFactor;
-//	float scaleY = 1.0f;
-//
-//	float verticalCompensate = baseOffset * (1.0f - scaleY);
-//	explodedGA = glm::translate(explodedGA, glm::vec3(4.4f, -1.15f + verticalCompensate, 0.2f));
-//
-//	explodedGA = glm::scale(explodedGA, glm::vec3(scaleXZ, scaleY, scaleXZ));
-//	explodedGA = glm::rotate(explodedGA, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-//
-//	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-//	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-//	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(explodedGA));
-//	ga.Draw(lightingShader);
-//}
 
 
 
-// ... (todo el código anterior se mantiene igual)
 
 
-if (ganVisible)
-{
-	glm::mat4 modelGan = glm::mat4(1.0f);
-	modelGan = glm::translate(modelGan, glm::vec3(4.0f, 0.0f, 0.0f)); // Ajusta posición
-	modelGan = glm::rotate(modelGan, glm::radians(ganRotation), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelGan = glm::scale(modelGan, glm::vec3(ganScaleFactor));
-
-	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelGan));
-	gan.Draw(lightingShader);
-}
-
-if (gVisible)
-{
-	glm::mat4 modelG = glm::mat4(1.0f);
-	modelG = glm::translate(modelG, ganTranslation + glm::vec3(gOffsetX, 0.0f, 0.0f));
-	modelG = glm::rotate(modelG, glm::radians(gRotation), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelG = glm::rotate(modelG, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	modelG = glm::scale(modelG, glm::vec3(gScaleFactor * 0.7f)); // Escala progresiva
-
-	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-	glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelG));
-
-	g.Draw(lightingShader);
-}
 
 
-if (grVisible)
-{
-	glm::mat4 modelGR = glm::mat4(1.0f);
-	modelGR = glm::translate(modelGR, ganTranslation + glm::vec3(grOffsetX - 0.05f, 0.0f, -0.15f));
-	modelGR = glm::rotate(modelGR, glm::radians(grRotation), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelGR = glm::rotate(modelGR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelGR = glm::rotate(modelGR, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	modelGR = glm::rotate(modelGR, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelGR = glm::scale(modelGR, glm::vec3(0.5f * grScaleFactor)); // Animación de escala
 
 
-	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelGR));
-
-	gr.Draw(lightingShader);
-}
-
-if (ramVisible)
-{
-	glm::mat4 modelRAM = glm::mat4(1.0f);
-	modelRAM = glm::translate(modelRAM, ganTranslation + glm::vec3(ramOffsetX - 0.02f, -0.25f, -0.06f));
-	modelRAM = glm::rotate(modelRAM, glm::radians(ramRotation), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelRAM = glm::rotate(modelRAM, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelRAM = glm::rotate(modelRAM, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelRAM = glm::scale(modelRAM, glm::vec3(0.3f * ramScaleFactor)); // Animación de escala
-
-
-	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelRAM));
-
-	ram.Draw(lightingShader);
-}
-
-if (prVisible)
-{
-	glm::mat4 modelPR = glm::mat4(1.0f);
-	modelPR = glm::translate(modelPR, ganTranslation + glm::vec3(prOffsetX + 0.012f, -0.19f, -0.18f));
-	modelPR = glm::rotate(modelPR, glm::radians(prRotation), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelPR = glm::rotate(modelPR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelPR = glm::rotate(modelPR, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelPR = glm::scale(modelPR, glm::vec3(0.07f * prScaleFactor));
-
-	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelPR));
-
-	pr.Draw(lightingShader);
-}
-
-if (fuVisible)
-{
-	glm::mat4 modelFU = glm::mat4(1.0f);
-	modelFU = glm::translate(modelFU, ganTranslation + glm::vec3(fuOffsetX - 0.2f, -0.26f, -0.3f));
-	modelFU = glm::rotate(modelFU, glm::radians(fuRotation), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelFU = glm::rotate(modelFU, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	modelFU = glm::rotate(modelFU, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-	modelFU = glm::rotate(modelFU, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	modelFU = glm::scale(modelFU, glm::vec3(0.35f * fuScaleFactor));
-
-	glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
-	glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelFU));
-
-	fu.Draw(lightingShader);
-}
 
 
 
@@ -816,9 +2558,33 @@ if (fuVisible)
 
 		
 
+		for (const auto& silla : sillas) {
+			if (silla.siVisible) {
+				glm::mat4 modelSi = glm::mat4(1.0f);
+				modelSi = glm::translate(modelSi, silla.siPos);
+				modelSi = glm::rotate(modelSi, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelSi = glm::scale(modelSi, glm::vec3(silla.siScale));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelSi));
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), silla.siExplosionFactor);
+				si.Draw(lightingShader);
+			}
 
-		
-	
+
+			if (silla.snVisible) {
+				glm::mat4 modelSn = glm::mat4(1.0f);
+				modelSn = glm::translate(modelSn, silla.snPos); // <--- esta línea DEBE usar snPos
+				modelSn = glm::rotate(modelSn, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+				modelSn = glm::scale(modelSn, glm::vec3(silla.snScale));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelSn));
+				sn.Draw(lightingShader);
+			}
+		}
+
+
+
+
+
+
 
 		// Also draw the lamp object, again binding the appropriate shader
 		lampShader.Use();
@@ -835,14 +2601,14 @@ if (fuVisible)
 		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		// Draw the light object (using light's vertex attributes)
-		
-			model = glm::mat4(1);
-			model = glm::translate(model, pointLightPositions[0]);
-			model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-			glBindVertexArray(VAO);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
-		
+
+		model = glm::mat4(1);
+		model = glm::translate(model, pointLightPositions[0]);
+		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
 		glBindVertexArray(0);
 
 
@@ -864,33 +2630,19 @@ if (fuVisible)
 void DoMovement()
 {
 
-	// Camera controls
-	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP])
-	{
-		camera.ProcessKeyboard(FORWARD, deltaTime);
+	float speedMultiplier = 3.0f; // Ajusta este número como quieras
 
-	}
+	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP])
+		camera.ProcessKeyboard(FORWARD, deltaTime * speedMultiplier);
 
 	if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN])
-	{
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
-
-
-	}
+		camera.ProcessKeyboard(BACKWARD, deltaTime * speedMultiplier);
 
 	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT])
-	{
-		camera.ProcessKeyboard(LEFT, deltaTime);
-
-
-	}
+		camera.ProcessKeyboard(LEFT, deltaTime * speedMultiplier);
 
 	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT])
-	{
-		camera.ProcessKeyboard(RIGHT, deltaTime);
-
-
-	}
+		camera.ProcessKeyboard(RIGHT, deltaTime * speedMultiplier);
 
 	if (keys[GLFW_KEY_T])
 	{
@@ -918,11 +2670,15 @@ void DoMovement()
 	{
 		pointLightPositions[0].z += 0.01f;
 	}
-	
+
 }
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
+	
+
+
+
 	if (GLFW_KEY_ESCAPE == key && action == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);
@@ -960,335 +2716,575 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		gaVisible = true;
 	}
 
-	if (key == GLFW_KEY_V && action == GLFW_PRESS)
+	if (key == GLFW_KEY_X && action == GLFW_PRESS)
 	{
-		gaExplosionActive = false;
-		gaExplosionFactor = 0.0f;
-		gaVisible = true;
+		for (auto& instancia : animaciones)
+		{
+			instancia.gaContracting = true;
+			instancia.gaExplosionActive = true;
+		}
 	}
+
+	if (key == GLFW_KEY_P && action == GLFW_PRESS)
+	{
+		for (auto& silla : sillas)
+		{
+			if (!silla.animacion.active && silla.siVisible && silla.fase == SillaAnimada::FaseAnimSilla::Completa) 
+				silla.fase = SillaAnimada::FaseAnimSilla::EscalandoAntesDeMover;
+			{
+				silla.animacion.keyframes = {
+	{0.0f, silla.snPos, 1.0f},
+	{1.0f, glm::vec3(silla.targetPos.x, 4.0f, silla.targetPos.z), 1.0f}
+				};
+
+
+
+					
+				
+				silla.animacion.start();
+
+				// No cambiar visibilidad aquí. Espera a que termine la animación si.
+				silla.siMoving = true;
+			}
+		}
+	}
+
+	if (key == GLFW_KEY_L && action == GLFW_PRESS)
+	{
+		for (auto& silla : sillas)
+		{
+			// Reinicia posiciones y visibilidad
+			silla.siPos = silla.siPosOriginal;
+			silla.siScale = 4.0f;
+			silla.siVisible = true;
+
+			silla.snPos = silla.targetPos + glm::vec3(0.0f, 4.0f, 0.0f);  // Empieza más arriba
+			silla.snScale = 0.0f;
+			silla.snVisible = false;
+
+			// Reinicia estados de control
+			silla.siMoving = false;
+			silla.snAppearing = false;
+			silla.snReturning = false;
+			silla.snRegresoTerminado = false;
+
+			// Reinicia animación
+			silla.animacion.keyframes.clear();
+			silla.animacion.currentTime = 0.0f;
+			silla.animacion.currentIndex = 0;
+			silla.animacion.active = false;
+
+			// ← Importante: reinicia la fase
+			silla.fase = SillaAnimada::FaseAnimSilla::EscalandoAntesDeMover;
+		}
+	}
+
+
+
+
+
 
 	if (key == GLFW_KEY_C && action == GLFW_PRESS)
 	{
-		ganAppearing = true;
-		ganScaleFactor = 0.0f;
-		ganRotation = 0.0f;
-		ganVisible = true;
+		for (auto& instancia : animaciones)
+		{
+			// GA visible desde el inicio
+			instancia.gaVisible = true;
+			instancia.gaExplosionFactor = 1.0f;
+			instancia.gaExplosionActive = false;
+			instancia.gaInflating = false;
+			instancia.gaContracting = false;
 
+			// GAN reinicia oculto
+			instancia.ganVisible = false;
+			instancia.ganAppearing = false;
+			instancia.ganScaleFactor = 1.0f;
+			instancia.ganRotation = 0.0f;
+			instancia.ganFinished = false;
+
+			// G
+			instancia.gVisible = false;
+			instancia.gAppearing = false;
+			instancia.gAnimActive = false;
+			instancia.gScaleFactor = 0.0f;
+			instancia.gRotation = 0.0f;
+			instancia.gOffsetX = 0.0f;
+			instancia.gInPhase1 = false;
+			instancia.gInPhase2 = false;
+
+			// GR
+			instancia.grVisible = false;
+			instancia.grAnimActive = false;
+			instancia.grScaleFactor = 0.0f;
+			instancia.grRotation = 0.0f;
+			instancia.grOffsetX = 0.0f;
+			instancia.grInPhase1 = false;
+			instancia.grInPhase2 = false;
+
+			// RAM
+			instancia.ramVisible = false;
+			instancia.ramAnimActive = false;
+			instancia.ramScaleFactor = 0.0f;
+			instancia.ramRotation = 0.0f;
+			instancia.ramOffsetX = 0.0f;
+			instancia.ramInPhase1 = false;
+			instancia.ramInPhase2 = false;
+
+			// PR
+			instancia.prVisible = false;
+			instancia.prAnimActive = false;
+			instancia.prScaleFactor = 0.0f;
+			instancia.prRotation = 0.0f;
+			instancia.prOffsetX = 0.0f;
+			instancia.prInPhase1 = false;
+			instancia.prInPhase2 = false;
+
+			// FU
+			instancia.fuVisible = false;
+			instancia.fuAnimActive = false;
+			instancia.fuScaleFactor = 0.0f;
+			instancia.fuRotation = 0.0f;
+			instancia.fuOffsetX = 0.0f;
+			instancia.fuInPhase1 = false;
+			instancia.fuInPhase2 = false;
+
+			// Reinicio final
+			instancia.translationY = globalTranslationYInicial;
+			instancia.escala = glm::vec3(3.0f);
+			instancia.reduciendoEscala = false;
+			instancia.bajandoY = false;
+			instancia.escala5Set = false;
+		}
+
+		// Variables globales por si acaso
+		gaAntesDeX = false;
+		animacionXCompleta = false;
 	}
 
+	// Manipulacion de luces 
+	if (key == GLFW_KEY_O && action == GLFW_PRESS) {
+		pointLightsOn = !pointLightsOn;
+	}
+	if (key == GLFW_KEY_K && action == GLFW_PRESS) {
+		spotLightOn = !spotLightOn;
+	}
+
+}
 
 
-	if (key == GLFW_KEY_X && action == GLFW_PRESS)
-	{
-		// Solo si no hay animaciones en curso
-		if (!gAnimActive && !grAnimActive && !ramAnimActive)
-		{
-			animacionXCompleta = false;
 
-			// Activar animación para modelo G
-			gVisible = true;
-			gScaleFactor = 0.0f;
-			gRotation = 0.0f;
-			gOffsetX = -1.0f;
-			gAnimActive = true;
-			gInPhase1 = true;  // fase de aparición girando
 
-			// Resetear los otros modelos
-			grVisible = false;
-			grAnimActive = false;
-			grScaleFactor = 0.0f;
-			grRotation = 0.0f;
-			grOffsetX = -1.0f;
-			grInPhase1 = false;
+void Animation() {
 
-			ramVisible = false;
-			ramAnimActive = false;
-			ramScaleFactor = 0.0f;
-			ramRotation = 0.0f;
-			ramOffsetX = -1.0f;
-			ramInPhase1 = false;
+	for (auto& silla : sillas) {
+		switch (silla.fase) {
+
+		case SillaAnimada::FaseAnimSilla::EscalandoAntesDeMover:
+			silla.siScale = glm::mix(silla.siScale, 1.0f, deltaTime * 1.0f);
+			if (fabs(silla.siScale - 1.0f) < 0.05f) {
+				silla.siScale = 1.0f;
+				silla.fase = SillaAnimada::FaseAnimSilla::SubirAntesDeMover;
+			}
+			break;
+
+		case SillaAnimada::FaseAnimSilla::SubirAntesDeMover:
+			silla.siPos.y = glm::mix(silla.siPos.y, silla.siPosOriginal.y + 4.0f, deltaTime * 1.0f);
+			if (fabs(silla.siPos.y - (silla.siPosOriginal.y + 4.0f)) < 0.05f) {
+				silla.siPos.y = silla.siPosOriginal.y + 4.0f;
+
+				silla.snScale = 0.0f;
+				silla.snPos = silla.targetPos; // ya en la posición
+				silla.animacion.keyframes = {
+	{0.0f, silla.siPos, 1.0f},
+	{2.0f, silla.targetPos, 1.0f}
+				};
+				silla.animacion.start();
+				silla.fase = SillaAnimada::FaseAnimSilla::MoverASalida;
+
+
+			}
+			break;
+
+
+
+		case SillaAnimada::FaseAnimSilla::MoverASalida:
+			if (silla.animacion.active) {
+				silla.animacion.update(deltaTime * 1.0f);
+				silla.siPos = silla.animacion.interpolatedPosition;
+			}
+			else {
+				silla.siExplotaComoModel1 = true;
+				silla.siExplosionFactor = 0.0f;
+				silla.fase = SillaAnimada::FaseAnimSilla::DesaparecerSi; // ← solo esto
+
+				// El resto va en DesaparecerSi
+			}
+
+			break;
+
+		case SillaAnimada::FaseAnimSilla::AparecerSn:
+			silla.snScale = glm::mix(silla.snScale, 1.0f, deltaTime * 2.0f);
+			if (fabs(silla.snScale - 1.0f) < 0.05f) {
+				silla.snScale = 1.0f;
+
+				silla.animacion.keyframes = {
+					{0.0f, silla.snPos, 1.0f},
+					{3.0f, silla.siPosOriginal + glm::vec3(0.0f, 4.0f, 0.0f), 1.0f}
+				};
+				silla.animacion.start();
+				silla.fase = SillaAnimada::FaseAnimSilla::SnMoverAOriginal;
+			}
+			break;
+		case SillaAnimada::FaseAnimSilla::SnMoverAOriginal:
+			if (silla.animacion.active) {
+				silla.animacion.update(deltaTime * 1.0f);
+				silla.snPos = silla.animacion.interpolatedPosition;
+			}
+			else {
+				silla.fase = SillaAnimada::FaseAnimSilla::SnEscalarOriginal;
+			}
+			break;
+
+
+
+		case SillaAnimada::FaseAnimSilla::SnEscalarOriginal:
+			silla.snScale = glm::mix(silla.snScale, 4.0f, deltaTime * 1.0f);
+			if (fabs(silla.snScale - 4.0f) < 0.05f) {
+				silla.snScale = 4.0f;
+				silla.fase = SillaAnimada::FaseAnimSilla::SnBajarFinal;
+			}
+			break;
+
+		case SillaAnimada::FaseAnimSilla::SnBajarFinal: {
+			const float velocidadBajada = 1.5f;
+			silla.snPos.y = glm::mix(silla.snPos.y, silla.siPosOriginal.y, deltaTime * velocidadBajada);
+
+			// Aquí hacemos una transición aún más suave
+			if (fabs(silla.snPos.y - silla.siPosOriginal.y) < 0.01f) {
+				silla.snPos.y = silla.siPosOriginal.y;
+				silla.fase = SillaAnimada::FaseAnimSilla::Completa;
+			}
+			break;
+		}
+		case SillaAnimada::FaseAnimSilla::DesaparecerSi:
+			if (silla.siExplosionFactor < 1.7f) {
+				silla.siExplosionFactor += deltaTime * 0.3f;
+			}
+
+			// Escala a 0 mientras explota
+			silla.siScale = glm::mix(silla.siScale, 0.0f, deltaTime * 1.0f);
+
+			if (silla.siExplosionFactor >= 1.7f && silla.siScale <= 0.05f) {
+				silla.siVisible = false;
+				silla.siExplotaComoModel1 = false;
+				silla.siExplosionFactor = 0.0f;
+				silla.siScale = 0.0f;
+
+				// Activa el modelo sn
+				silla.snVisible = true;
+				silla.snScale = 0.0f;
+				silla.snPos = silla.targetPos;
+
+				silla.animacion.keyframes = {
+					{0.0f, silla.snPos, 1.0f},
+					{3.0f, silla.siPosOriginal + glm::vec3(0.0f, 4.0f, 0.0f), 1.0f}
+				};
+				silla.animacion.start();
+				silla.fase = SillaAnimada::FaseAnimSilla::AparecerSn;
+			}
+			break;
+
+
+
+		case SillaAnimada::FaseAnimSilla::Completa:
+		default:
+			break;
 		}
 	}
 
 
 
 
-}
 
 
-// ... (todo el contenido anterior se mantiene igual hasta la función Animation)
 
-// Animación modificada
-void Animation() {
-	if (animacionActivada)
-	{
-		if (posBallY >= limiteSuperior) moviendoArriba = false;
-		if (posBallY <= limiteInferior) moviendoArriba = true;
-		if (moviendoArriba) posBallY += velocidad * deltaTime;
-		else posBallY -= velocidad * deltaTime;
-	}
 
-	if (explosionActive)
-	{
-		explosionFactor += 0.008f;
-		if (explosionFactor >= 1.7f)
-		{
+	// ------------------- EXPLOSIÓN (tecla N) -------------------
+	if (explosionActive && explosionFactor < 1.7f) {
+		explosionFactor += deltaTime * 0.2f;  // velocidad de expansión
+		if (explosionFactor >= 1.7f) {
 			explosionFactor = 1.7f;
 			explosionActive = false;
 			model1Visible = false;
+			model2Visible = true;
 			model2Appearing = true;
 			model2ScaleFactor = 0.0f;
 			model2Rotation = 0.0f;
-			model2TargetRotation = 1080.0f;
-			model2Visible = true;
 		}
 	}
 
-	if (model2Appearing)
-	{
-		if (model2ScaleFactor < 1.2f)
-		{
-			model2ScaleFactor += deltaTime * 1.5f;
-			if (model2ScaleFactor > 1.2f)
-				model2ScaleFactor = 1.2f;
-		}
-		if (model2Rotation < model2TargetRotation)
-		{
-			model2Rotation += deltaTime * 360.0f;
-			if (model2Rotation >= model2TargetRotation)
-			{
-				model2Rotation = 0.0f;
-				model2Appearing = false;
-			}
+	// ------------------- APARICIÓN MODEL2 -------------------
+	if (model2Appearing) {
+		model2ScaleFactor += deltaTime * 1.0f;
+		if (model2ScaleFactor > 1.0f) model2ScaleFactor = 1.0f;
+
+		model2Rotation += deltaTime * 360.0f;
+		if (model2Rotation >= model2TargetRotation) {
+			model2Rotation = model2TargetRotation;
+			model2Appearing = false;
 		}
 	}
 
-	if (gaExplosionActive)
-	{
-		if (gaInflating)
-		{
-			gaExplosionFactor += deltaTime * 1.5f;
-			if (gaExplosionFactor >= 2.0f)
-			{
-				gaExplosionFactor = 2.0f;
-				gaInflating = false;
-				gaContracting = true;
-			}
-		}
-		else if (gaContracting)
-		{
-			gaExplosionFactor -= deltaTime * 3.0f;
-			if (gaExplosionFactor <= 0.0f)
-			{
-				gaExplosionFactor = 0.0f;
-				gaExplosionActive = false;
-				gaContracting = false;
-				gaVisible = false;
-			}
+	// ------------------- IMPLOSIÓN (tecla M) -------------------
+	if (implosionActive) {
+		implosionFactor += deltaTime * 2.0f;  // velocidad de contracción
+		if (implosionFactor >= 1.7f) {
+			implosionFactor = 0.0f;
+			explosionFactor = 0.0f;
+			implosionActive = false;
+
+			model1Visible = true;
+			model2Visible = false;
+			model2Appearing = false;
+			model2ScaleFactor = 0.0f;
+			model2Rotation = 0.0f;
 		}
 	}
 
-	if (ganAppearing)
-	{
-		if (ganScaleFactor < 1.0f)
-		{
-			ganScaleFactor += deltaTime * 1.2f;
-			if (ganScaleFactor > 1.0f) ganScaleFactor = 1.0f;
+
+
+	// Animación por instancia (usando vector `animaciones`)
+	for (InstanciaAnimacion& instancia : animaciones) {
+		if (instancia.animacionEstatica && !instancia.gaContracting && !instancia.ganAppearing && !instancia.gVisible) {
+			continue;
 		}
-		if (ganRotation < ganTargetRotation)
+
+		if (instancia.gaVisible && instancia.gaContracting)
 		{
-			ganRotation += deltaTime * 180.0f;
-			if (ganRotation >= ganTargetRotation)
+			instancia.gaExplosionFactor -= deltaTime * 1.5f;
+
+			if (instancia.gaExplosionFactor <= 0.0f)
 			{
-				ganRotation = ganTargetRotation;
-				ganAppearing = false;
+				instancia.gaExplosionFactor = 0.0f;
+				instancia.gaVisible = false;
+				instancia.ganVisible = true;
+				instancia.ganAppearing = true;
+				instancia.ganScaleFactor = 0.0f;
+				instancia.ganRotation = 0.0f;
+
+				// Solo si estaba arriba, sube a Y=7.0 para animar
+				if (!instancia.animacionEstatica)
+					instancia.translationY = globalTranslationYInicial;
 			}
 		}
+
+		if (instancia.posicion.x == 7.0f) {
+			// Desactiva el cambio de escala y bajada
+			instancia.reduciendoEscala = false;
+			instancia.bajandoY = false;
+		}
+
+
+		// Aparece GAN
+		if (instancia.ganAppearing) {
+			if (instancia.ganScaleFactor < 1.0f) {
+				instancia.ganScaleFactor += deltaTime * 0.5f;
+				if (instancia.ganScaleFactor > 1.0f) instancia.ganScaleFactor = 1.0f;
+			}
+			if (instancia.ganRotation < ganTargetRotation) {
+				instancia.ganRotation += deltaTime * 180.0f;
+				if (instancia.ganRotation > ganTargetRotation)
+					instancia.ganRotation = ganTargetRotation;
+			}
+
+			if (instancia.ganScaleFactor >= 1.0f && instancia.ganRotation >= ganTargetRotation) {
+				instancia.ganAppearing = false;
+				instancia.ganFinished = true;
+			}
+		}
+
+		// Activar G después de GAN
+		if (instancia.ganFinished && !instancia.gAnimActive) {
+			instancia.gVisible = true;
+			instancia.gScaleFactor = 0.0f;
+			instancia.gRotation = 0.0f;
+			instancia.gOffsetX = -0.5f;
+			instancia.gAnimActive = true;
+			instancia.gInPhase1 = true;
+			instancia.ganFinished = false;
+		}
+
+		// Animación de G
+		if (instancia.gAnimActive) {
+			if (instancia.gInPhase1) {
+				instancia.gScaleFactor += deltaTime * 1.5f;
+				if (instancia.gScaleFactor > 1.0f) instancia.gScaleFactor = 1.0f;
+
+				instancia.gRotation += deltaTime * 180.0f;
+				if (instancia.gRotation >= instancia.gTargetRotation) {
+					instancia.gRotation = instancia.gTargetRotation;
+					instancia.gInPhase1 = false;
+					instancia.gInPhase2 = true;
+				}
+			}
+			else if (instancia.gInPhase2) {
+				instancia.gOffsetX += deltaTime * 1.0f;
+				if (instancia.gOffsetX >= 0.0f) {
+					instancia.gOffsetX = 0.0f;
+					instancia.gAnimActive = false;
+					instancia.gInPhase2 = false;
+
+					// Activar GR
+					instancia.grVisible = true;
+					instancia.grScaleFactor = 0.0f;
+					instancia.grRotation = 0.0f;
+					instancia.grOffsetX = -0.5f;
+					instancia.grAnimActive = true;
+					instancia.grInPhase1 = true;
+				}
+			}
+		}
+
+		// Animación de GR
+		if (instancia.grAnimActive) {
+			if (instancia.grInPhase1) {
+				instancia.grScaleFactor += deltaTime * 1.5f;
+				if (instancia.grScaleFactor > 1.0f) instancia.grScaleFactor = 1.0f;
+
+				instancia.grRotation += deltaTime * 180.0f;
+				if (instancia.grRotation >= instancia.grTargetRotation) {
+					instancia.grRotation = instancia.grTargetRotation;
+					instancia.grInPhase1 = false;
+					instancia.grInPhase2 = true;
+				}
+			}
+			else if (instancia.grInPhase2) {
+				instancia.grOffsetX += deltaTime * 1.0f;
+				if (instancia.grOffsetX >= 0.0f) {
+					instancia.grOffsetX = 0.0f;
+					instancia.grAnimActive = false;
+					instancia.grInPhase2 = false;
+
+					// Activar RAM
+					instancia.ramVisible = true;
+					instancia.ramScaleFactor = 0.0f;
+					instancia.ramRotation = 0.0f;
+					instancia.ramOffsetX = -0.5f;
+					instancia.ramAnimActive = true;
+					instancia.ramInPhase1 = true;
+				}
+			}
+		}
+
+		// RAM
+		if (instancia.ramAnimActive) {
+			if (instancia.ramInPhase1) {
+				instancia.ramScaleFactor += deltaTime * 1.5f;
+				if (instancia.ramScaleFactor > 1.0f) instancia.ramScaleFactor = 1.0f;
+
+				instancia.ramRotation += deltaTime * 180.0f;
+				if (instancia.ramRotation >= instancia.ramTargetRotation) {
+					instancia.ramRotation = instancia.ramTargetRotation;
+					instancia.ramInPhase1 = false;
+					instancia.ramInPhase2 = true;
+				}
+			}
+			else if (instancia.ramInPhase2) {
+				instancia.ramOffsetX += deltaTime * 1.0f;
+				if (instancia.ramOffsetX >= 0.0f) {
+					instancia.ramOffsetX = 0.0f;
+					instancia.ramAnimActive = false;
+					instancia.ramInPhase2 = false;
+
+					instancia.prVisible = true;
+					instancia.prScaleFactor = 0.0f;
+					instancia.prRotation = 0.0f;
+					instancia.prOffsetX = -0.5f;
+					instancia.prAnimActive = true;
+					instancia.prInPhase1 = true;
+				}
+			}
+		}
+
+		// PR
+		if (instancia.prAnimActive) {
+			if (instancia.prInPhase1) {
+				instancia.prScaleFactor += deltaTime * 1.5f;
+				if (instancia.prScaleFactor > 1.0f) instancia.prScaleFactor = 1.0f;
+
+				instancia.prRotation += deltaTime * 180.0f;
+				if (instancia.prRotation >= 360.0f) {
+					instancia.prRotation = 360.0f;
+					instancia.prInPhase1 = false;
+					instancia.prInPhase2 = true;
+				}
+			}
+			else if (instancia.prInPhase2) {
+				instancia.prOffsetX += deltaTime * 1.0f;
+				if (instancia.prOffsetX >= 0.0f) {
+					instancia.prOffsetX = 0.0f;
+					instancia.prAnimActive = false;
+					instancia.prInPhase2 = false;
+
+					instancia.fuVisible = true;
+					instancia.fuScaleFactor = 0.0f;
+					instancia.fuRotation = 0.0f;
+					instancia.fuOffsetX = -0.5f;
+					instancia.fuAnimActive = true;
+					instancia.fuInPhase1 = true;
+				}
+			}
+		}
+
+		// FU
+		if (instancia.fuAnimActive) {
+			if (instancia.fuInPhase1) {
+				instancia.fuScaleFactor += deltaTime * 1.5f;
+				if (instancia.fuScaleFactor > 1.0f) instancia.fuScaleFactor = 1.0f;
+
+				instancia.fuRotation += deltaTime * 180.0f;
+				if (instancia.fuRotation >= instancia.fuTargetRotation) {
+					instancia.fuRotation = instancia.fuTargetRotation;
+					instancia.fuInPhase1 = false;
+					instancia.fuInPhase2 = true;
+				}
+			}
+			// FU - final
+			else if (instancia.fuInPhase2) {
+				instancia.fuOffsetX += deltaTime * 1.0f;
+				if (instancia.fuOffsetX >= 0.0f) {
+					instancia.fuOffsetX = 0.0f;
+					instancia.fuAnimActive = false;
+					instancia.fuInPhase2 = false;
+
+					instancia.reduciendoEscala = true;
+				}
+			}
+
+		}
+
+
+		else if (instancia.reduciendoEscala && !instancia.animacionEstatica) {
+			instancia.escala = glm::mix(instancia.escala, glm::vec3(2.0f), deltaTime * 1.5f);
+			if (glm::length(instancia.escala - glm::vec3(2.0f)) < 0.01f) {
+				instancia.escala = glm::vec3(2.0f);
+				instancia.reduciendoEscala = false;
+				instancia.bajandoY = true;
+			}
+		}
+
+		if (instancia.bajandoY && !instancia.animacionEstatica) {
+			instancia.translationY -= deltaTime * 2.0f;
+			if (instancia.translationY <= 0.5f) {
+				instancia.translationY = 0.5f;
+				instancia.bajandoY = false;
+			}
+		}
+
 	}
-
-	if (gAppearing)
-	{
-		if (gScaleFactor < 1.0f)
-		{
-			gScaleFactor += deltaTime * 1.2f;
-			if (gScaleFactor > 1.0f) gScaleFactor = 1.0f;
-		}
-		if (gRotation < gTargetRotation)
-		{
-			gRotation += deltaTime * 180.0f;
-			if (gRotation >= gTargetRotation)
-			{
-				gRotation = gTargetRotation;
-				gAppearing = false;
-			}
-		}
-	}
-
-	if (gAnimActive)
-	{
-		if (gInPhase1)
-		{
-			gScaleFactor += deltaTime * 1.5f;
-			if (gScaleFactor > 1.0f) gScaleFactor = 1.0f;
-
-			gRotation += deltaTime * 180.0f;
-			if (gRotation >= gTargetRotation)
-			{
-				gRotation = gTargetRotation;
-				gInPhase1 = false;
-				gInPhase2 = true;
-			}
-		}
-		else if (gInPhase2)
-		{
-			gOffsetX += deltaTime * 1.0f;
-			if (gOffsetX >= 0.0f)
-			{
-				gOffsetX = 0.0f;
-				gAnimActive = false;
-				gInPhase2 = false;
-
-				grVisible = true;
-				grScaleFactor = 0.0f;
-				grRotation = 0.0f;
-				grOffsetX = -1.0f;
-				grAnimActive = true;
-				grInPhase1 = true;
-			}
-		}
-	}
-	if (grAnimActive)
-	{
-		if (grInPhase1)
-		{
-			grScaleFactor += deltaTime * 1.5f;
-			if (grScaleFactor > 1.0f) grScaleFactor = 1.0f;
-
-			grRotation += deltaTime * 180.0f; // rotación progresiva
-			if (grRotation >= grTargetRotation)
-			{
-				grRotation = grTargetRotation;
-				grInPhase1 = false;
-				grInPhase2 = true;
-			}
-		}
-		else if (grInPhase2)
-		{
-			grOffsetX += deltaTime * 1.0f;
-			if (grOffsetX >= 0.0f)
-			{
-				grOffsetX = 0.0f;
-				grAnimActive = false;
-				grInPhase2 = false;
-
-				ramVisible = true;
-				ramScaleFactor = 0.0f;
-				ramRotation = 0.0f;
-				ramOffsetX = -1.0f;
-				ramAnimActive = true;
-				ramInPhase1 = true;
-			}
-		}
-	}
-
-	if (ramAnimActive)
-	{
-		if (ramInPhase1)
-		{
-			ramScaleFactor += deltaTime * 1.5f;
-			if (ramScaleFactor > 1.0f) ramScaleFactor = 1.0f;
-
-			ramRotation += deltaTime * 180.0f; // rotación progresiva
-			if (ramRotation >= ramTargetRotation)
-			{
-				ramRotation = ramTargetRotation;
-				ramInPhase1 = false;
-				ramInPhase2 = true;
-			}
-		}
-		else if (ramInPhase2)
-		{
-			ramOffsetX += deltaTime * 1.0f;
-			if (ramOffsetX >= 0.0f)
-			{
-				ramOffsetX = 0.0f;
-				ramAnimActive = false;
-				ramInPhase2 = false;
-
-				prVisible = true;
-				prScaleFactor = 0.0f;
-				prRotation = 0.0f;
-				prOffsetX = -1.0f;
-				prAnimActive = true;
-				prInPhase1 = true;
-			}
-		}
-	}
-	if (prAnimActive)
-	{
-		if (prInPhase1)
-		{
-			prScaleFactor += deltaTime * 1.5f;
-			if (prScaleFactor > 1.0f) prScaleFactor = 1.0f;
-
-			prRotation += deltaTime * 180.0f;
-			if (prRotation >= 360.0f)
-			{
-				prRotation = 360.0f;
-				prInPhase1 = false;
-				prInPhase2 = true;
-			}
-		}
-		else if (prInPhase2)
-		{
-			prOffsetX += deltaTime * 1.0f;
-			if (prOffsetX >= 0.0f)
-			{
-				prOffsetX = 0.0f;
-				prAnimActive = false;
-				prInPhase2 = false;
-
-				// Activar modelo FU
-				fuVisible = true;
-				fuScaleFactor = 0.0f;
-				fuRotation = 0.0f;
-				fuOffsetX = -1.0f;
-				fuAnimActive = true;
-				fuInPhase1 = true;
-			}
-		}
-	}
-	if (fuAnimActive)
-	{
-		if (fuInPhase1)
-		{
-			fuScaleFactor += deltaTime * 1.5f;
-			if (fuScaleFactor > 1.0f) fuScaleFactor = 1.0f;
-
-			fuRotation += deltaTime * 180.0f;
-			if (fuRotation >= fuTargetRotation)
-			{
-				fuRotation = fuTargetRotation;
-				fuInPhase1 = false;
-				fuInPhase2 = true;
-			}
-		}
-		else if (fuInPhase2)
-		{
-			fuOffsetX += deltaTime * 1.0f;
-			if (fuOffsetX >= 0.0f)
-			{
-				fuOffsetX = 0.0f;
-				fuAnimActive = false;
-				fuInPhase2 = false;
-			}
-		}
-	}
-
 }
 
 
-	
 
 
 
@@ -1296,7 +3292,7 @@ void Animation() {
 
 
 
-void MouseCallback(GLFWwindow *window, double xPos, double yPos)
+void MouseCallback(GLFWwindow* window, double xPos, double yPos)
 {
 	if (firstMouse)
 	{
