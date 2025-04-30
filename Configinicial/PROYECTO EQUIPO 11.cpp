@@ -657,6 +657,9 @@ bool cortinasViejasVisibles = true;
 bool cortinasNuevasVisibles = false;
 bool rackVisible = true;
 bool modemVisible = false;
+bool aireViejoVisible = true;
+bool aireNuevoVisible = false;
+bool proyectorVisible = true;
 
 
 
@@ -844,6 +847,8 @@ int main()
 	Model LAM((char*)"Models/LAM/LAM.obj");
 	Model co2((char*)"Models/co2/co2.obj");
 	Model MO((char*)"Models/MO/MO.obj");
+	Model I((char*)"Models/I/I.obj");
+
 
 
 
@@ -1066,7 +1071,7 @@ int main()
 	/////////--------------DIBUJO DE MODELOS--------------//////////////////
 
 
-/////////--------------------PANTALLAS----------//////////////
+		/////////--------------------PANTALLAS----------//////////////
 
 		for (const auto& pos : posicionesPantallas)
 		{
@@ -1142,19 +1147,36 @@ int main()
 
 
 
-		// ------------------ AIRE ------------------
+		// ------------------ AIRE VIEJO ------------------
+		if (aireViejoVisible)
 		{
-			glm::mat4 modelai = glm::mat4(1.0f);  // Matriz identidad
-			modelai = glm::translate(modelai, glm::vec3(-3.5f, 6.5f, -60.0f)); // Posición del modelo
-			modelai = glm::rotate(modelai, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
-			modelai = glm::scale(modelai, glm::vec3(5.0f));  // Escala fija
+			glm::mat4 modelaI = glm::mat4(1.0f);
+			modelaI = glm::translate(modelaI, glm::vec3(-3.5f, 6.5f, -60.0f));
+			modelaI = glm::rotate(modelaI, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelaI = glm::scale(modelaI, glm::vec3(5.0f));
 
 			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
-			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelai));
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelaI));
 
-			ai.Draw(lightingShader);  // Dibuja el modelo
+			ai.Draw(lightingShader);
 		}
+
+		// ------------------ AIRE NUEVO ------------------
+		if (aireNuevoVisible)
+		{
+			glm::mat4 modelaIN = glm::mat4(1.0f);
+			modelaIN = glm::translate(modelaIN, glm::vec3(-3.5f, 6.5f, -60.0f));
+			modelaIN = glm::rotate(modelaIN, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelaIN = glm::scale(modelaIN, glm::vec3(5.0f));
+
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelaIN));
+
+			I.Draw(lightingShader);
+		}
+
 
 		// ------------------ BOTIQUIN ------------------
 		{
@@ -1606,19 +1628,21 @@ int main()
 
 
 		// ------------------ PROYECTOR ------------------
+		if (proyectorVisible)
 		{
 			glm::mat4 modelcor = glm::mat4(1.0f);  // Matriz identidad
-			modelcor = glm::translate(modelcor, glm::vec3(-3.0f, 7.5f, -40.0)); // Posición del modelo
-			modelcor = glm::rotate(modelcor, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre el eje Y
-			modelcor = glm::rotate(modelcor, glm::radians(270.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // Rotación sobre el eje Y
-			modelcor = glm::scale(modelcor, glm::vec3(2.0f, 1.0f, 2.0f));  // Escala fija
+			modelcor = glm::translate(modelcor, glm::vec3(-3.0f, 7.5f, -40.0));
+			modelcor = glm::rotate(modelcor, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelcor = glm::rotate(modelcor, glm::radians(270.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			modelcor = glm::scale(modelcor, glm::vec3(2.0f, 1.0f, 2.0f));
 
 			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
 			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelcor));
 
-			r.Draw(lightingShader);  // Dibuja el modelo
+			r.Draw(lightingShader);
 		}
+
 
 		// ------------------ CORTINAS VIEJAS (modelos co) ------------------
 		if (cortinasViejasVisibles) {
@@ -1682,10 +1706,7 @@ int main()
 
 
 
-
-
-
-
+	
 
 
 
@@ -2072,7 +2093,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		cortinasNuevasVisibles = true;
 		rackVisible = false;
 		modemVisible = true;
-
+		aireViejoVisible = false;
+		aireNuevoVisible = true;
+		proyectorVisible = false;
 	}
 
 	if (key == GLFW_KEY_Y && action == GLFW_PRESS)
@@ -2092,11 +2115,196 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		lucesX10 = !lucesX10;
 	}
 
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+	{
+		// Restaurar visibilidad y escala de modelos principales
+		piVisible = true;
+		nVisible = false;
+		piScaleFactor = 1.0f;
+		nScaleFactor = 0.0f;
+		piMinimizando = false;
+		nApareciendo = false;
+
+		// Mesas
+		mesasViejasVisibles = true;
+		mesasNuevasVisibles = false;
+		mesasScaleFactorViejas = 1.0f;
+		mesasScaleFactorNuevas = 0.0f;
+		mesasViejasReduciendo = false;
+		mesasAnimandoAparecer = false;
+
+		// Teclados
+		teVisible = true;
+		tnVisible = false;
+		teScaleFactor = 1.0f;
+		tnScaleFactor = 0.0f;
+		teMinimizando = false;
+		tnApareciendo = false;
+
+		// Sillas especiales
+		sillaEspecial1Visible = true;
+		sillaEspecial2Visible = true;
+		escalaSillaEspecial1 = 4.0f;
+		escalaSillaEspecial2 = 4.0f;
+		sillaEspecial1Minimizando = false;
+		sillaEspecial2Minimizando = false;
+
+		// Modelos Pv y Mess
+		modeloPvVisible = true;
+		modeloMessVisible = true;
+		escalaPv = 1.0f;
+		escalaMess = 1.0f;
+		minimizandoConT = false;
+
+		// MM
+		modeloMMVisible = true;
+		escalaMM = 1.0f;
+		minimizandoMM = false;
+
+		// Cortinas
+		cortinasViejasVisibles = true;
+		cortinasNuevasVisibles = false;
+
+		// Rack / Modem
+		rackVisible = true;
+		modemVisible = false;
+
+		// Aire acondicionado
+		aireViejoVisible = true;
+		aireNuevoVisible = false;
+
+		// Proyector
+		proyectorVisible = true;
+
+		// Salon
+		modeloSalonVisible = true;
+		modeloSalonNuevoVisible = false;
+
+		for (auto& instancia : animaciones)
+		{
+			instancia.gaVisible = true;
+			instancia.gaExplosionFactor = 1.0f;
+			instancia.gaExplosionActive = false;
+			instancia.gaInflating = false;
+			instancia.gaContracting = false;
+
+			instancia.ganVisible = false;
+			instancia.ganAppearing = false;
+			instancia.ganScaleFactor = 1.0f;
+			instancia.ganRotation = 0.0f;
+			instancia.ganFinished = false;
+
+			instancia.gVisible = false;
+			instancia.gAppearing = false;
+			instancia.gAnimActive = false;
+			instancia.gScaleFactor = 0.0f;
+			instancia.gRotation = 0.0f;
+			instancia.gOffsetX = 0.0f;
+			instancia.gInPhase1 = false;
+			instancia.gInPhase2 = false;
+
+			instancia.grVisible = false;
+			instancia.grAnimActive = false;
+			instancia.grScaleFactor = 0.0f;
+			instancia.grRotation = 0.0f;
+			instancia.grOffsetX = 0.0f;
+			instancia.grInPhase1 = false;
+			instancia.grInPhase2 = false;
+
+			instancia.ramVisible = false;
+			instancia.ramAnimActive = false;
+			instancia.ramScaleFactor = 0.0f;
+			instancia.ramRotation = 0.0f;
+			instancia.ramOffsetX = 0.0f;
+			instancia.ramInPhase1 = false;
+			instancia.ramInPhase2 = false;
+
+			instancia.prVisible = false;
+			instancia.prAnimActive = false;
+			instancia.prScaleFactor = 0.0f;
+			instancia.prRotation = 0.0f;
+			instancia.prOffsetX = 0.0f;
+			instancia.prInPhase1 = false;
+			instancia.prInPhase2 = false;
+
+			instancia.fuVisible = false;
+			instancia.fuAnimActive = false;
+			instancia.fuScaleFactor = 0.0f;
+			instancia.fuRotation = 0.0f;
+			instancia.fuOffsetX = 0.0f;
+			instancia.fuInPhase1 = false;
+			instancia.fuInPhase2 = false;
+
+			instancia.translationY = globalTranslationYInicial;
+			instancia.escala = glm::vec3(4.0f);
+			instancia.reduciendoEscala = false;
+			instancia.bajandoY = false;
+			instancia.escala5Set = false;
+
+			// Reinicia estados de los modelos de monitor
+			model1Visible = true;
+			model2Visible = false;
+			model2Appearing = false;
+			model2ScaleFactor = 0.0f;
+			model2Rotation = 0.0f;
+			explosionActive = false;
+			implosionActive = false;
+			explosionFactor = 0.0f;
+			implosionFactor = 0.0f;
+
+		}
+		for (auto& silla : sillas)
+		{
+			silla.siPos = silla.siPosOriginal;
+			silla.siScale = 4.0f;
+			silla.siVisible = true;
+			silla.siMoving = false;
+			silla.siShrinking = false;
+
+			silla.snPos = silla.targetPos + glm::vec3(0.0f, 4.0f, 0.0f);
+			silla.snScale = 0.0f;
+			silla.snAppearing = false;
+			silla.snReturning = false;
+			silla.snVisible = false;
+			silla.snRegresoTerminado = false;
+
+			silla.fase = SillaAnimada::FaseAnimSilla::Completa;
+
+			silla.animacion.keyframes.clear();
+			silla.animacion.currentTime = 0.0f;
+			silla.animacion.currentIndex = 0;
+			silla.animacion.active = false;
+		}
+
+	}
 
 
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
