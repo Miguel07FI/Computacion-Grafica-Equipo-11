@@ -1476,6 +1476,7 @@ int main()
 				modelGan = glm::scale(modelGan, glm::vec3(instancia.ganScaleFactor));
 
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelGan));
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 				gan.Draw(lightingShader);
 			}
 
@@ -1490,7 +1491,7 @@ int main()
 				modelG = glm::rotate(modelG, glm::radians(instancia.gRotation), glm::vec3(1.0f, 0.0f, 0.0f));
 				modelG = glm::rotate(modelG, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 				modelG = glm::scale(modelG, glm::vec3(instancia.gScaleFactor * 0.7f));
-
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelG));
 				g.Draw(lightingShader);
 			}
@@ -1508,7 +1509,7 @@ int main()
 				modelGR = glm::rotate(modelGR, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 				modelGR = glm::rotate(modelGR, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 				modelGR = glm::scale(modelGR, glm::vec3(0.5f * instancia.grScaleFactor));
-
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelGR));
 				gr.Draw(lightingShader);
 			}
@@ -1525,7 +1526,7 @@ int main()
 				modelRAM = glm::rotate(modelRAM, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 				modelRAM = glm::rotate(modelRAM, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 				modelRAM = glm::scale(modelRAM, glm::vec3(0.3f * instancia.ramScaleFactor));
-
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelRAM));
 				ram.Draw(lightingShader);
 			}
@@ -1542,7 +1543,7 @@ int main()
 				modelPR = glm::rotate(modelPR, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 				modelPR = glm::rotate(modelPR, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 				modelPR = glm::scale(modelPR, glm::vec3(0.07f * instancia.prScaleFactor));
-
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPR));
 				pr.Draw(lightingShader);
 			}
@@ -1560,7 +1561,7 @@ int main()
 				modelFU = glm::rotate(modelFU, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 				modelFU = glm::rotate(modelFU, glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 				modelFU = glm::scale(modelFU, glm::vec3(0.35f * instancia.fuScaleFactor));
-
+				glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelFU));
 				fu.Draw(lightingShader);
 			}
@@ -2646,7 +2647,7 @@ void Animation() {
 			}
 		}
 
-		if (instancia.posicion.x == 7.0f) {
+		if (instancia.posicion.x == 4.0f) {
 			// Desactiva el cambio de escala y bajada
 			instancia.reduciendoEscala = false;
 			instancia.bajandoY = false;
