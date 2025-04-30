@@ -1164,14 +1164,10 @@ int main()
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
 
 
-
-
-
 		/////////--------------DIBUJO DE MODELOS--------------//////////////////
 
 
-
-			/////////--------------------PANTALLAS----------//////////////
+		/////////--------------------PANTALLAS----------//////////////
 
 		for (const auto& pos : posicionesPantallas)
 		{
@@ -1799,6 +1795,12 @@ int main()
 			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelco5));
 			co2.Draw(lightingShader);
 		}
+
+
+
+
+
+
 
 
 
