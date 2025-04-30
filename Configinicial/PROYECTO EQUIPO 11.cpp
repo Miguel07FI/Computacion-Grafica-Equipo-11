@@ -652,6 +652,13 @@ bool lucesXneg10 = true;  // U
 bool lucesX0 = true;      // I
 bool lucesX10 = true;     // O
 
+/////------CORTINAS-------////////////
+bool cortinasViejasVisibles = true;
+bool cortinasNuevasVisibles = false;
+
+
+
+
 
 std::vector<SillaAnimada> sillas;
 
@@ -834,6 +841,7 @@ int main()
 	Model MM((char*)"Models/MM/MM.obj");
 	Model SAN((char*)"Models/SAN/SAN.obj");
 	Model LAM((char*)"Models/LAM/LAM.obj");
+	Model co2((char*)"Models/co2/co2.obj");
 
 
 
@@ -1054,6 +1062,7 @@ int main()
 
 
 	/////////--------------DIBUJO DE MODELOS--------------//////////////////
+
 
 
 
@@ -1616,7 +1625,61 @@ int main()
 			r.Draw(lightingShader);  // Dibuja el modelo
 		}
 
+		// ------------------ CORTINAS VIEJAS (modelos co) ------------------
+		if (cortinasViejasVisibles) {
+			glm::vec3 scale = glm::vec3(20.0f, 8.0f, 16.0f);
 
+
+
+			glm::mat4 modelco = glm::mat4(1.0f);
+			modelco = glm::translate(modelco, glm::vec3(5.0f, 4.4f, -60.0));
+			modelco = glm::rotate(modelco, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelco = glm::scale(modelco, scale);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelco));
+			co.Draw(lightingShader);
+
+			glm::mat4 modelco1 = glm::mat4(1.0f);
+			modelco1 = glm::translate(modelco1, glm::vec3(-11.0f, 4.4f, -60.0));
+			modelco1 = glm::rotate(modelco1, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelco1 = glm::scale(modelco1, scale);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelco1));
+			co.Draw(lightingShader);
+		}
+
+
+		// ------------------ CORTINAS NUEVAS (modelos co2) ------------------
+		if (cortinasNuevasVisibles) {
+			glm::vec3 scaleNew = glm::vec3(20.0f, 8.0f, 16.0f);
+
+
+			glm::mat4 modelco2 = glm::mat4(1.0f);
+			modelco2 = glm::translate(modelco2, glm::vec3(5.0f, 4.4f, -60.0));
+			modelco2 = glm::rotate(modelco2, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelco2 = glm::scale(modelco2, scaleNew);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelco2));
+			co2.Draw(lightingShader);
+
+			glm::mat4 modelco3 = glm::mat4(1.0f);
+			modelco3 = glm::translate(modelco3, glm::vec3(-11.0f, 4.4f, -60.0));
+			modelco3 = glm::rotate(modelco3, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelco3 = glm::scale(modelco3, scaleNew);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelco3));
+			co2.Draw(lightingShader);
+
+			glm::mat4 modelco4 = glm::mat4(1.0f);
+			modelco4 = glm::translate(modelco4, glm::vec3(1.0f, 4.4f, -20.0));
+			modelco4 = glm::rotate(modelco4, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelco4 = glm::scale(modelco4, scaleNew);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelco4));
+			co2.Draw(lightingShader);
+
+			glm::mat4 modelco5 = glm::mat4(1.0f);
+			modelco5 = glm::translate(modelco5, glm::vec3(-11.0f, 4.4f, -20.0));
+			modelco5 = glm::rotate(modelco5, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelco5 = glm::scale(modelco5, scaleNew);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelco5));
+			co2.Draw(lightingShader);
+		}
 
 
 
@@ -1747,6 +1810,40 @@ int main()
 	return 0;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Moves/alters the camera positions based on user input
 void DoMovement()
 {
@@ -1765,29 +1862,7 @@ void DoMovement()
 	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT])
 		camera.ProcessKeyboard(RIGHT, deltaTime * speedMultiplier);
 
-	if (keys[GLFW_KEY_T])
-	{
-		pointLightPositions[0].x += 0.01f;
-	}
-	if (keys[GLFW_KEY_G])
-	{
-		pointLightPositions[0].x -= 0.01f;
-	}
-
-	if (keys[GLFW_KEY_Y])
-	{
-		pointLightPositions[0].y += 0.01f;
-	}
-
-	if (keys[GLFW_KEY_H])
-	{
-		pointLightPositions[0].y -= 0.01f;
-	}
 	
-	if (keys[GLFW_KEY_J])
-	{
-		pointLightPositions[0].z += 0.01f;
-	}
 
 }
 
@@ -1987,6 +2062,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		sillaEspecial1Minimizando = true;
 		sillaEspecial2Minimizando = true;
 		minimizandoMM = true;
+		cortinasViejasVisibles = false;
+		cortinasNuevasVisibles = true;
 
 	}
 
@@ -2517,6 +2594,7 @@ void Animation() {
 	{
 		escalaPv -= 0.02f;  // Velocidad de desaparición
 		escalaMess -= 0.02f;
+		
 
 		if (escalaPv <= 0.0f)
 		{
@@ -2562,6 +2640,7 @@ void Animation() {
 			modeloMMVisible = false;
 		}
 	}
+	
 
 
 }

@@ -46,7 +46,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Animación_Básica.cpp">
+    <ClCompile Include="PROYECTO EQUIPO 11.cpp">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
   </ItemGroup>
