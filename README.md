@@ -1,2 +1,2 @@
 # CompuGrafica
- Curso de Computacion Grafica
+ REPOSITORIO DE TRABAJO SOBRE EL PROYECTO DE COMPUTACION GRAFICA
