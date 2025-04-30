@@ -1,6 +1,6 @@
 #version 330 core
 
-#define NUMBER_OF_POINT_LIGHTS 2
+#define NUMBER_OF_POINT_LIGHTS 6
 
 struct Material
 {
@@ -83,9 +83,11 @@ void main( )
     // Spot light
     result += CalcSpotLight( spotLight, norm, FragPos, viewDir );
  	
-    color = vec4( result,texture(material.diffuse, TexCoords).rgb );
-	  if(color.a < 0.1 && transparency==1)
-        discard;
+    vec4 texColor = texture(material.diffuse, TexCoords);
+color = vec4(result * texColor.rgb, texColor.a);
+if (color.a < 0.1 && transparency == 1)
+    discard;
+
 
 }
 
