@@ -456,9 +456,9 @@ struct SillaAnimada {
 		SnBajarFinal,
 		Completa
 
-		
 
-		
+
+
 	};
 
 	FaseAnimSilla fase = FaseAnimSilla::Completa;
@@ -531,7 +531,7 @@ struct SillaAnimada {
 		targetPos = glm::vec3(11.0f, siPosOriginal.y + 4.0f, -20.0f);
 
 		snRegresoTerminado = false;
-		
+
 
 
 	}
@@ -661,7 +661,9 @@ bool modemVisible = false;
 bool aireViejoVisible = true;
 bool aireNuevoVisible = false;
 bool proyectorVisible = true;
-
+// Reflector Light (Spotlight)
+glm::vec3 reflectorLightPos(0.0f, 0.3f, 3.5f);
+bool reflectorLightActive = true;
 
 
 
@@ -809,7 +811,7 @@ int main()
 	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
 	Shader skyboxshader("Shader/SkyBox.vs", "Shader/SkyBox.frag");
 
-	
+
 	//models
 	Model Com((char*)"Models/Com/1.obj");
 	Model Com2((char*)"Models/Comp2/2.obj");
@@ -976,9 +978,9 @@ int main()
 
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
 
-	
+
 	//////////////----------------DIBUJOS DE SILLAS Y PC'S---------------------////////////////
-	
+
 	// Agregar instancia inicial con GA visible
 	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -25.8f));
 	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -30.3f));
@@ -1039,7 +1041,7 @@ int main()
 
 
 
-	
+
 
 	// Game loop
 	while (!glfwWindowShouldClose(window))
@@ -1073,9 +1075,15 @@ int main()
 		glUniform3f(viewPosLoc, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
 
 
-		// Directional light
-	// Luz direccional atenuada
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.2f, 0.2f, 0.2f);
+
+
+
+
+
+		//////////////////////////////----------------------LUCES----------------------------------///////////////////////////////
+				// Directional light
+			// Luz direccional atenuada
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.08f, 0.08f, 0.08f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.3f, 0.3f, 0.3f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.1f, 0.1f, 0.1f);
 
@@ -1088,7 +1096,7 @@ int main()
 		lightColor.z = sin(glfwGetTime() * Light1.z);
 
 
-		
+
 		if (pointLightActive) {
 			for (int i = 0; i < 6; ++i) {
 				glm::vec3 pos = pointLightPositions[i];
@@ -1103,9 +1111,10 @@ int main()
 				glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "position").c_str()), pos.x, pos.y, pos.z);
 
 				if (activo) {
-					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "ambient").c_str()), 0.13f, 0.13f, 0.13f);
-					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "diffuse").c_str()), 0.26f, 0.26f, 0.26f);
-					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "specular").c_str()), 0.39f, 0.39f, 0.39f);
+					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "ambient").c_str()), 0.16f, 0.16f, 0.16f);
+					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "diffuse").c_str()), 0.31f, 0.31f, 0.31f);
+					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "specular").c_str()), 0.47f, 0.47f, 0.47f);
+
 
 				}
 				else {
@@ -1119,26 +1128,38 @@ int main()
 				glUniform1f(glGetUniformLocation(lightingShader.Program, (prefix + "quadratic").c_str()), 0.0007f);
 			}
 
-		
+
 
 		}
-		
+
+		///////////////////////////-------------------------------REFLECTOR-----------------------------------///////////////////////
+		if (reflectorLightActive)
+		{
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), -6.0f, 4.0f, -40.0f);
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), -1.0f, 0.0f, 0.0f); // Dirección fija (puedes modificar)
+
+			// Componentes de iluminación
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 1.0f, 1.0f, 1.0f);   // máximo brillo base
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.diffuse"), 2.0f, 2.0f, 2.0f);   // luz más intensa
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.specular"), 1.0f, 1.0f, 1.0f);  // brillos destacados
 
 
+			// Atenuación
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.constant"), 1.0f);
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.linear"), 0.02f);     // menor caída
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.quadratic"), 0.001f); // luz más persistente
 
 
-		// SpotLight
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.direction"), camera.GetFront().x, camera.GetFront().y, camera.GetFront().z);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.ambient"), 0.2f, 0.2f, 0.8f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.diffuse"), 0.2f, 0.2f, 0.8f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.specular"), 0.0f, 0.0f, 0.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.constant"), 1.0f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.linear"), 0.3f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.quadratic"), 0.7f);
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutOff"), glm::cos(glm::radians(12.0f)));
-		glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutOff"), glm::cos(glm::radians(18.0f)));
+			// Ángulos
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.cutOff"), glm::cos(glm::radians(10.0f)));
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "spotLight.outerCutOff"), glm::cos(glm::radians(20.0f)));
 
+		}
+		else
+		{
+			// Apaga la luz (posición lejana o sin efecto)
+			glUniform3f(glGetUniformLocation(lightingShader.Program, "spotLight.position"), 0.0f, 0.0f, 0.0f);
+		}
 
 		// Set material properties
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "material.shininess"), 5.0f);
@@ -1167,7 +1188,7 @@ int main()
 		/////////--------------DIBUJO DE MODELOS--------------//////////////////
 
 
-		/////////--------------------PANTALLAS----------//////////////
+	/////////--------------------PANTALLAS----------//////////////
 
 		for (const auto& pos : posicionesPantallas)
 		{
@@ -1809,23 +1830,23 @@ int main()
 
 
 
-	
-
-
-
-	
-	
 
 
 
 
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
+
+
+
+
+
+
 		//		//DIBUJO DE SALON
 
 		if (modeloSalonVisible)
@@ -1915,13 +1936,22 @@ int main()
 			// ⬇️ Aquí aplicas la rotación (ángulo en radianes)
 			model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 			model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		
+
 
 			model = glm::scale(model, glm::vec3(10.5f, 10.0f, 5.5f)); // Escalado final
 
 			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 			LAM.Draw(lightingShader);
 		}
+
+
+		glm::mat4 modelReflectorLight = glm::mat4(1.0f);
+		modelReflectorLight = glm::translate(modelReflectorLight, reflectorLightPos);
+		modelReflectorLight = glm::scale(modelReflectorLight, glm::vec3(0.05f)); // Tamaño pequeño
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelReflectorLight));
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
 
 		glBindVertexArray(0); // Libera el VAO
@@ -2016,7 +2046,7 @@ void DoMovement()
 	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT])
 		camera.ProcessKeyboard(RIGHT, deltaTime * speedMultiplier);
 
-	
+
 
 }
 
@@ -2078,7 +2108,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	{
 		for (auto& silla : sillas)
 		{
-			if (!silla.animacion.active && silla.siVisible && silla.fase == SillaAnimada::FaseAnimSilla::Completa) 
+			if (!silla.animacion.active && silla.siVisible && silla.fase == SillaAnimada::FaseAnimSilla::Completa)
 				silla.fase = SillaAnimada::FaseAnimSilla::EscalandoAntesDeMover;
 			{
 				silla.animacion.keyframes = {
@@ -2086,7 +2116,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	{1.0f, glm::vec3(silla.targetPos.x, 4.0f, silla.targetPos.z), 1.0f}
 				};
 
-				
+
 				silla.animacion.start();
 
 				// No cambiar visibilidad aquí. Espera a que termine la animación si.
@@ -2094,39 +2124,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 			}
 		}
 	}
-
-	if (key == GLFW_KEY_L && action == GLFW_PRESS)
-	{
-		for (auto& silla : sillas)
-		{
-			// Reinicia posiciones y visibilidad
-			silla.siPos = silla.siPosOriginal;
-			silla.siScale = 4.0f;
-			silla.siVisible = true;
-
-			silla.snPos = silla.targetPos + glm::vec3(0.0f, 4.0f, 0.0f);  // Empieza más arriba
-			silla.snScale = 0.0f;
-			silla.snVisible = false;
-
-			// Reinicia estados de control
-			silla.siMoving = false;
-			silla.snAppearing = false;
-			silla.snReturning = false;
-			silla.snRegresoTerminado = false;
-
-			// Reinicia animación
-			silla.animacion.keyframes.clear();
-			silla.animacion.currentTime = 0.0f;
-			silla.animacion.currentIndex = 0;
-			silla.animacion.active = false;
-
-			// ← Importante: reinicia la fase
-			silla.fase = SillaAnimada::FaseAnimSilla::EscalandoAntesDeMover;
-		}
-	}
-
-
-
 
 
 
@@ -2404,6 +2401,22 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		}
 
 	}
+	// Alternar el estado de la luz reflectora con la tecla 'L'
+	if (keys[GLFW_KEY_L] && action == GLFW_PRESS)
+	{
+		reflectorLightActive = !reflectorLightActive;
+
+		if (reflectorLightActive)
+		{
+			// Luz en su posición original
+			reflectorLightPos = glm::vec3(0.0f, 0.3f, 3.5f);
+		}
+		else
+		{
+			// La ocultamos lejos
+			reflectorLightPos = glm::vec3(1000.0f, 1000.0f, 1000.0f);
+		}
+	}
 
 
 
@@ -2573,10 +2586,10 @@ void Animation() {
 
 
 
-///////--------ANIMACION DE PANTALLAS--------------///////////
+	///////--------ANIMACION DE PANTALLAS--------------///////////
 
 
-	// ------------------- EXPLOSIÓN (tecla N) -------------------
+		// ------------------- EXPLOSIÓN (tecla N) -------------------
 	if (explosionActive && explosionFactor < 1.7f) {
 		explosionFactor += deltaTime * 0.2f;  // velocidad de expansión
 		if (explosionFactor >= 1.7f) {
@@ -2621,7 +2634,7 @@ void Animation() {
 
 
 
-/////////---------------------ANIMACION DE PC'S-----------------------////////////////
+	/////////---------------------ANIMACION DE PC'S-----------------------////////////////
 
 	for (InstanciaAnimacion& instancia : animaciones) {
 		if (instancia.animacionEstatica && !instancia.gaContracting && !instancia.ganAppearing && !instancia.gVisible) {
@@ -2937,7 +2950,7 @@ void Animation() {
 	{
 		escalaPv -= 0.02f;  // Velocidad de desaparición
 		escalaMess -= 0.02f;
-		
+
 
 		if (escalaPv <= 0.0f)
 		{
@@ -2983,7 +2996,7 @@ void Animation() {
 			modeloMMVisible = false;
 		}
 	}
-	
+
 
 
 }
