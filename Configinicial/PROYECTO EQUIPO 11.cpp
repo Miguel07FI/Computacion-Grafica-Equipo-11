@@ -1008,9 +1008,9 @@ int main()
 	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -52.5f));
 
 	// Nuevas instancias sin cambio de posición o escala (solo animación en el lugar)
-	animaciones.emplace_back(glm::vec3(4.0f, -2.3f, -59.0f), true);
-	animaciones.emplace_back(glm::vec3(-3.0f, -2.3f, -59.0f), true);
-	animaciones.emplace_back(glm::vec3(-10.0f, -2.3f, -59.0f), true);
+	animaciones.emplace_back(glm::vec3(4.0f, -2.3f, -57.0f), true);
+	animaciones.emplace_back(glm::vec3(-3.0f, -2.3f, -57.0f), true);
+	animaciones.emplace_back(glm::vec3(-10.0f, -2.3f, -57.0f), true);
 
 	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -28.0f));
 	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -23.0f));
@@ -2360,7 +2360,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 			instancia.fuInPhase2 = false;
 
 			instancia.translationY = globalTranslationYInicial;
-			instancia.escala = glm::vec3(4.0f);
+			instancia.escala = glm::vec3(2.0f);
 			instancia.reduciendoEscala = false;
 			instancia.bajandoY = false;
 			instancia.escala5Set = false;
