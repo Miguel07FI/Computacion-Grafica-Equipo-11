@@ -1593,9 +1593,9 @@ int main()
 		if (rackVisible)
 		{
 			glm::mat4 modelr = glm::mat4(1.0f);  // Matriz identidad
-			modelr = glm::translate(modelr, glm::vec3(12.0f, 0.5f, -40.0f)); // Posición del modelo
+			modelr = glm::translate(modelr, glm::vec3(12.0f, 1.5f, -40.0f)); // Posición del modelo
 			modelr = glm::rotate(modelr, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotación sobre Y
-			modelr = glm::scale(modelr, glm::vec3(9.0f));  // Escala
+			modelr = glm::scale(modelr, glm::vec3(10.5f));  // Escala
 
 			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
 			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
