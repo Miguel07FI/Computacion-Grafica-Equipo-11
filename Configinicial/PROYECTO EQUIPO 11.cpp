@@ -2831,7 +2831,6 @@ void Animation() {
 					instancia.fuInPhase2 = true;
 				}
 			}
-			// FU - final
 			else if (instancia.fuInPhase2) {
 				instancia.fuOffsetX += deltaTime * 1.0f;
 				if (instancia.fuOffsetX >= 0.0f) {
@@ -2839,22 +2838,15 @@ void Animation() {
 					instancia.fuAnimActive = false;
 					instancia.fuInPhase2 = false;
 
-					instancia.reduciendoEscala = true;
+					// Iniciar bajada
+					if (!instancia.animacionEstatica) {
+						instancia.bajandoY = true;
+					}
 				}
 			}
-
 		}
 
-
-		else if (instancia.reduciendoEscala && !instancia.animacionEstatica) {
-			instancia.escala = glm::mix(instancia.escala, glm::vec3(2.0f), deltaTime * 1.5f);
-			if (glm::length(instancia.escala - glm::vec3(2.0f)) < 0.01f) {
-				instancia.escala = glm::vec3(2.0f);
-				instancia.reduciendoEscala = false;
-				instancia.bajandoY = true;
-			}
-		}
-
+		// Este bloque debe estar AFUERA del if(fuAnimActive)
 		if (instancia.bajandoY && !instancia.animacionEstatica) {
 			instancia.translationY -= deltaTime * 2.0f;
 			if (instancia.translationY <= 0.5f) {
@@ -2863,148 +2855,147 @@ void Animation() {
 			}
 		}
 
+
+
+
+		/////////////////--------------------------------ANIMACION DE APARICION Y DESAPARICION DE OBJETOS ----------------////////////////////
+		//////////MINIMZAR///////////////////////
+		if (piMinimizando)
+		{
+			piScaleFactor -= deltaTime * 2.0f; // velocidad de minimizado
+			if (piScaleFactor <= 0.0f)
+			{
+				piScaleFactor = 0.0f;
+				piMinimizando = false;
+				piVisible = false;
+				nVisible = true;
+				nApareciendo = true;
+				nScaleFactor = 0.0f;
+
+
+			}
+		}
+
+		//////////////////APARICION////////////////////////ANIMACIONES EXTRAS
+		if (nApareciendo)
+		{
+			nScaleFactor += deltaTime * 2.0f; // velocidad de aparición
+			if (nScaleFactor >= 1.0f)
+			{
+				nScaleFactor = 1.0f;
+				nApareciendo = false;
+			}
+		}
+
+		if (mesasViejasReduciendo)
+		{
+			mesasScaleFactorViejas -= deltaTime * 2.0f; // velocidad de reducción
+			if (mesasScaleFactorViejas <= 0.0f)
+			{
+				mesasScaleFactorViejas = 0.0f;
+				mesasViejasReduciendo = false;
+				mesasViejasVisibles = false;
+				mesasNuevasVisibles = true;
+				mesasAnimandoAparecer = true;
+				mesasScaleFactorNuevas = 0.0f;
+			}
+		}
+
+		if (mesasAnimandoAparecer)
+		{
+			mesasScaleFactorNuevas += deltaTime * 2.0f; // velocidad de aparición
+			if (mesasScaleFactorNuevas >= 1.0f)
+			{
+				mesasScaleFactorNuevas = 1.0f;
+				mesasAnimandoAparecer = false;
+			}
+		}
+
+		// Minimizar TE
+		if (teMinimizando)
+		{
+			teScaleFactor -= deltaTime * 2.0f;
+			if (teScaleFactor <= 0.0f)
+			{
+				teScaleFactor = 0.0f;
+				teMinimizando = false;
+				teVisible = false;
+				tnVisible = true;
+				tnApareciendo = true;
+				tnScaleFactor = 0.0f;
+			}
+		}
+
+		// Aparecer TN
+		if (tnApareciendo)
+		{
+			tnScaleFactor += deltaTime * 2.0f;
+			if (tnScaleFactor >= 1.0f)
+			{
+				tnScaleFactor = 1.0f;
+				tnApareciendo = false;
+			}
+		}
+
+		if (minimizandoConT)
+		{
+			escalaPv -= 0.02f;  // Velocidad de desaparición
+			escalaMess -= 0.02f;
+
+
+			if (escalaPv <= 0.0f)
+			{
+				escalaPv = 0.0f;
+				modeloPvVisible = false;
+			}
+			if (escalaMess <= 0.0f)
+			{
+				escalaMess = 0.0f;
+				modeloMessVisible = false;
+			}
+		}
+
+		if (sillaEspecial1Minimizando)
+		{
+			escalaSillaEspecial1 -= deltaTime * 2.0f; // velocidad de minimizado
+			if (escalaSillaEspecial1 <= 0.0f)
+			{
+				escalaSillaEspecial1 = 0.0f;
+				sillaEspecial1Minimizando = false;
+				sillaEspecial1Visible = false;
+			}
+		}
+
+		if (sillaEspecial2Minimizando)
+		{
+			escalaSillaEspecial2 -= deltaTime * 2.0f;
+			if (escalaSillaEspecial2 <= 0.0f)
+			{
+				escalaSillaEspecial2 = 0.0f;
+				sillaEspecial2Minimizando = false;
+				sillaEspecial2Visible = false;
+			}
+		}
+
+		if (minimizandoMM)
+		{
+			escalaMM -= deltaTime * 2.0f; // velocidad de minimizado
+			if (escalaMM <= 0.0f)
+			{
+				escalaMM = 0.0f;
+				minimizandoMM = false;
+				modeloMMVisible = false;
+			}
+		}
+
+
+
 	}
 
-
-
-	/////////////////--------------------------------ANIMACION DE APARICION Y DESAPARICION DE OBJETOS ----------------////////////////////
-	//////////MINIMZAR///////////////////////
-	if (piMinimizando)
-	{
-		piScaleFactor -= deltaTime * 2.0f; // velocidad de minimizado
-		if (piScaleFactor <= 0.0f)
-		{
-			piScaleFactor = 0.0f;
-			piMinimizando = false;
-			piVisible = false;
-			nVisible = true;
-			nApareciendo = true;
-			nScaleFactor = 0.0f;
-
-
-		}
-	}
-
-	//////////////////APARICION////////////////////////ANIMACIONES EXTRAS
-	if (nApareciendo)
-	{
-		nScaleFactor += deltaTime * 2.0f; // velocidad de aparición
-		if (nScaleFactor >= 1.0f)
-		{
-			nScaleFactor = 1.0f;
-			nApareciendo = false;
-		}
-	}
-
-	if (mesasViejasReduciendo)
-	{
-		mesasScaleFactorViejas -= deltaTime * 2.0f; // velocidad de reducción
-		if (mesasScaleFactorViejas <= 0.0f)
-		{
-			mesasScaleFactorViejas = 0.0f;
-			mesasViejasReduciendo = false;
-			mesasViejasVisibles = false;
-			mesasNuevasVisibles = true;
-			mesasAnimandoAparecer = true;
-			mesasScaleFactorNuevas = 0.0f;
-		}
-	}
-
-	if (mesasAnimandoAparecer)
-	{
-		mesasScaleFactorNuevas += deltaTime * 2.0f; // velocidad de aparición
-		if (mesasScaleFactorNuevas >= 1.0f)
-		{
-			mesasScaleFactorNuevas = 1.0f;
-			mesasAnimandoAparecer = false;
-		}
-	}
-
-	// Minimizar TE
-	if (teMinimizando)
-	{
-		teScaleFactor -= deltaTime * 2.0f;
-		if (teScaleFactor <= 0.0f)
-		{
-			teScaleFactor = 0.0f;
-			teMinimizando = false;
-			teVisible = false;
-			tnVisible = true;
-			tnApareciendo = true;
-			tnScaleFactor = 0.0f;
-		}
-	}
-
-	// Aparecer TN
-	if (tnApareciendo)
-	{
-		tnScaleFactor += deltaTime * 2.0f;
-		if (tnScaleFactor >= 1.0f)
-		{
-			tnScaleFactor = 1.0f;
-			tnApareciendo = false;
-		}
-	}
-
-	if (minimizandoConT)
-	{
-		escalaPv -= 0.02f;  // Velocidad de desaparición
-		escalaMess -= 0.02f;
-
-
-		if (escalaPv <= 0.0f)
-		{
-			escalaPv = 0.0f;
-			modeloPvVisible = false;
-		}
-		if (escalaMess <= 0.0f)
-		{
-			escalaMess = 0.0f;
-			modeloMessVisible = false;
-		}
-	}
-
-	if (sillaEspecial1Minimizando)
-	{
-		escalaSillaEspecial1 -= deltaTime * 2.0f; // velocidad de minimizado
-		if (escalaSillaEspecial1 <= 0.0f)
-		{
-			escalaSillaEspecial1 = 0.0f;
-			sillaEspecial1Minimizando = false;
-			sillaEspecial1Visible = false;
-		}
-	}
-
-	if (sillaEspecial2Minimizando)
-	{
-		escalaSillaEspecial2 -= deltaTime * 2.0f;
-		if (escalaSillaEspecial2 <= 0.0f)
-		{
-			escalaSillaEspecial2 = 0.0f;
-			sillaEspecial2Minimizando = false;
-			sillaEspecial2Visible = false;
-		}
-	}
-
-	if (minimizandoMM)
-	{
-		escalaMM -= deltaTime * 2.0f; // velocidad de minimizado
-		if (escalaMM <= 0.0f)
-		{
-			escalaMM = 0.0f;
-			minimizandoMM = false;
-			modeloMMVisible = false;
-		}
-	}
 
 
 
 }
-
-
-
-
-
 
 
 
