@@ -963,12 +963,12 @@ int main()
 
 	//Load texture
 	vector < const GLchar*> faces;
-	faces.push_back("SkyBox/right.jpg");
-	faces.push_back("SkyBox/left.jpg");
-	faces.push_back("SkyBox/top.jpg");
-	faces.push_back("SkyBox/bottom.jpg");
-	faces.push_back("SkyBox/back.jpg");
-	faces.push_back("SkyBox/front.jpg");
+	faces.push_back("SkyBox/px.png");
+	faces.push_back("SkyBox/nx.png");
+	faces.push_back("SkyBox/py.png");
+	faces.push_back("SkyBox/ny.png");
+	faces.push_back("SkyBox/pz.png");
+	faces.push_back("SkyBox/nz.png");
 
 
 	GLuint cubemapTexture = TextureLoading::LoadCubemap(faces);
@@ -1111,11 +1111,9 @@ int main()
 				glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "position").c_str()), pos.x, pos.y, pos.z);
 
 				if (activo) {
-					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "ambient").c_str()), 0.16f, 0.16f, 0.16f);
-					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "diffuse").c_str()), 0.31f, 0.31f, 0.31f);
-					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "specular").c_str()), 0.47f, 0.47f, 0.47f);
-
-
+					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "ambient").c_str()), 0.16f * 0.83f, 0.16f * 0.83f, 0.16f * 0.83f);
+					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "diffuse").c_str()), 0.31f * 0.83f, 0.31f * 0.83f, 0.31f * 0.83f); 
+					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "specular").c_str()), 0.47f * 0.83f, 0.47f * 0.83f, 0.47f * 0.83f); 
 				}
 				else {
 					glUniform3f(glGetUniformLocation(lightingShader.Program, (prefix + "ambient").c_str()), 0.0f, 0.0f, 0.0f);
@@ -1126,9 +1124,9 @@ int main()
 				glUniform1f(glGetUniformLocation(lightingShader.Program, (prefix + "constant").c_str()), 1.0f);
 				glUniform1f(glGetUniformLocation(lightingShader.Program, (prefix + "linear").c_str()), 0.014f);
 				glUniform1f(glGetUniformLocation(lightingShader.Program, (prefix + "quadratic").c_str()), 0.0007f);
+
+
 			}
-
-
 
 		}
 
