@@ -674,11 +674,11 @@ bool reflectorLightActive = true;
 
 
 // Variables de control de la animación de la luz 6
-float light6AnimationProgress = 0.0f;  // Progreso de la animación (de 0 a 1)
-float light6AnimationSpeed = 0.00004f;     // Velocidad de la animación (ajustable)
+
+
 bool light6Active = false;             // Controla si la luz 6 está activa
-glm::vec3 light6Scale = glm::vec3(0.0f);  // Escala inicial de la luz 6 (invisible)
-glm::vec3 light6FinalScale = glm::vec3(0.2f, 7.5f, 16.0f);  // Escala final de la luz 6
+
+
 
 
 std::vector<SillaAnimada> sillas;
@@ -699,6 +699,61 @@ bool hayColision(glm::vec3 nuevaPos, const SillaAnimada& actual)
 }
 
 std::vector<InstanciaAnimacion> animaciones;
+
+//----------------PANTALLA-----------------////
+bool modelsVisible = false;
+bool othersCanAppear = false;  // Se activará cuando el modelo principal desaparezca
+
+
+// Variables de control de la animación de la luz 6
+float light6AnimationProgress = 0.0f;
+float light6AnimationSpeed = 0.000004f;
+
+glm::vec3 light6Scale = glm::vec3(0.0f);
+glm::vec3 light6FinalScale = glm::vec3(0.2f, 7.5f, 16.0f);
+
+bool drawModelWithF = false;
+float animationProgress = 0.0f;
+float animationSpeed = 0.005f;
+bool modelVisibleAndReady = false;
+
+glm::vec3 minPoint(-12.6f, 0.5f, -46.5f);
+glm::vec3 maxPoint(-12.6f, 6.5f, -33.5f);
+
+float decayTimer = 0.0f;  // Temporizador para la desintegración
+bool decayTriggered = false;  // Controlar si la desintegración ya se activó
+
+glm::vec3 velocity(0.009f, 0.009f, 0.01f);
+
+
+bool lightReady = false;
+
+glm::vec3 initialPosition = glm::vec3(-12.6f, 3.5f, -40.0f);
+glm::vec3 position = initialPosition;
+
+float scaleFactor = 1.0f;
+
+
+float scaleTimer = 0.0f;
+float scaleSpeed = 2.0f; // Ajusta la velocidad de pulsación
+float minScaleFactor = 0.4f;
+
+float rotationAngle = 0.0f;
+float rotationSpeed = 90.0f; // grados por segundo
+
+float apAnimationProgress = 0.0f;  // Para el modelo 'ap'
+float fiAnimationProgress = 0.0f;  // Para el modelo 'fi'
+float tdAnimationProgress = 0.0f;  // Para el modelo 'td'
+
+float animationSpeeds = 1.0f; // Ajusta la velocidad de la animación
+
+float maxDecayRadius = 5.0f; // Radio máximo de desintegración
+
+
+
+bool apVisible = false;  // Bandera para controlar la visibilidad del modelo `pi`
+bool fiVisible = false;
+bool tdVisible = false;
 
 ////////////POSICIONES DE LUCES
 glm::vec3 pointLightPositions[] = {
@@ -868,6 +923,10 @@ int main()
 	Model MO((char*)"Models/MO/MO.obj");
 	Model I((char*)"Models/I/I.obj");
 	Model ma((char*)"Models / MAES / MAES.obj");
+	Model fi((char*)"Models/fi/fi.obj");
+	Model ap((char*)"Models/ap/ap.obj");
+	Model td((char*)"Models/td/td.obj");
+
 
 
 
@@ -1863,6 +1922,195 @@ int main()
 		}
 
 
+		// Tamaño base del modelo (sin escala pulsante)
+		glm::vec3 baseScale = glm::vec3(120.0f, 2.0f, 2.0f);
+		glm::vec3 lastScale = glm::vec3(0.0f, 0.0f, 0.0f);  // Variable para guardar la última escala (para rebote y desaparición)
+
+		if (drawModelWithF) {
+			// Verificar si se presionó la tecla F para reiniciar la animación
+			if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+				// Reiniciar el ciclo de animación
+				animationProgress = 0.0f;  // Reiniciar progreso de la animación
+				decayTimer = 0.0f;        // Reiniciar temporizador de desaparición
+				decayTriggered = false;    // Reiniciar estado de desaparición
+				modelVisibleAndReady = false; // Reiniciar visibilidad del modelo
+				light6AnimationProgress = 0.0f; // Reiniciar animación de la luz
+				lightReady = false; // Reiniciar estado de luz puntual
+				lastScale = glm::vec3(0.0f, 0.0f, 0.0f); // Reiniciar la escala guardada
+			}
+
+			// Verificar si se presionó la tecla Space para reiniciar las animaciones
+			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+				// Reiniciar animaciones de rebote y escala para los 3 modelos
+				apAnimationProgress = 0.0f;
+				fiAnimationProgress = 0.0f;
+				tdAnimationProgress = 0.0f;
+
+				// Reiniciar la posición de los modelos
+				position = glm::vec3(-12.2f, 3.5f, -40.0f);  // Reposicionar fi al inicio
+				othersCanAppear = false;  // Evitar que los modelos aparezcan antes de que fi termine su animación
+			}
+
+			// Aumentar el progreso de la animación de la escala del modelo
+			if (animationProgress < 1.0f) {
+				animationProgress += animationSpeed;  // Aumentar el progreso de la escala
+			}
+
+			// Comprobar si el modelo está completamente visible
+			if (animationProgress >= 1.0f) {
+				modelVisibleAndReady = true;  // El modelo está completamente visible
+			}
+
+			// Aumentar el progreso de la animación de la luz puntual
+			if (light6AnimationProgress < 1.0f) {
+				light6AnimationProgress += animationSpeed;  // Aumentar el progreso de la luz puntual
+			}
+
+			// Comprobar si la luz puntual está completamente animada
+			if (light6AnimationProgress >= 1.0f) {
+				lightReady = true;  // La luz puntual ha completado su animación
+			}
+
+			// Solo activamos la animación de rebote si tanto el modelo como la luz están completamente visibles
+			if (modelVisibleAndReady && lightReady) {
+				// El modelo y la luz están listos para la animación de rebote
+				position += velocity;
+
+				// Tamaño base fijo para colisiones, no cambia con la escala pulsante
+				glm::vec3 collisionHalfSize = baseScale * 0.5f;
+
+				// Comprobación de colisión
+				if (position.x - collisionHalfSize.x <= minPoint.x || position.x + collisionHalfSize.x >= maxPoint.x) {
+					velocity.x = -velocity.x;
+				}
+				if (position.y - collisionHalfSize.y <= minPoint.y || position.y + collisionHalfSize.y >= maxPoint.y) {
+					velocity.y = -velocity.y;
+				}
+				if (position.z - collisionHalfSize.z <= minPoint.z || position.z + collisionHalfSize.z >= maxPoint.z) {
+					velocity.z = -velocity.z;
+				}
+
+				// **Temporizador para la desaparición del modelo después de 15 segundos**
+				decayTimer += deltaTime;  // Incrementamos el temporizador
+				if (decayTimer >= 16.5f && !decayTriggered) {  // 15 segundos de animación
+					decayTriggered = true;  // Activar la desaparición después de 15 segundos
+				}
+			}
+
+			// Determinar el valor de la escala dependiendo del estado
+			glm::vec3 scale;
+			if (modelVisibleAndReady && lightReady) {
+				// Usamos la última escala guardada para el bucle de rebote
+				if (lastScale == glm::vec3(0.0f, 0.0f, 0.0f)) {
+					// Si es la primera vez, la escala será la de la animación de aparición
+					lastScale = glm::mix(glm::vec3(0.0f), baseScale, animationProgress);  // Guardamos la escala de aparición
+				}
+
+				// Escala pulsante mientras rebota
+				scaleTimer += deltaTime * scaleSpeed;
+				scaleFactor = 0.7f + 0.3f * sin(scaleTimer); // oscila entre [0.4, 1.0]
+				scale = lastScale * scaleFactor; // Aplicamos la escala pulsante basada en la escala guardada
+
+				// Rotación mientras rebota
+				rotationAngle += rotationSpeed * deltaTime;
+				if (rotationAngle > 360.0f) rotationAngle -= 360.0f;
+			}
+			else {
+				// Escala de aparición (de 0 a escala base) si el modelo no está listo
+				scale = glm::mix(glm::vec3(0.0f), baseScale, animationProgress);
+				rotationAngle = 0.0f; // sin rotación durante aparición
+			}
+
+			// Al finalizar el bucle de rebote, guardamos la escala final
+			if (decayTimer >= 20.0f && !decayTriggered) {
+				lastScale = scale;  // Guardamos la escala final al final del rebote
+			}
+
+			// Si la desaparición está activada (después de 15 segundos), reducir la escala hasta 0
+			if (decayTriggered) {
+				// Interpolación suave para desaparición: reducir la escala gradualmente a 0
+				float fadeFactor = glm::clamp(1.0f - (decayTimer - 16.5f) / 5.0f, 0.0f, 1.0f); // Desaparece gradualmente después de 15 segundos
+				scale = lastScale * fadeFactor; // Reducir la escala gradualmente con la escala final del rebote
+			}
+
+			// Asegurarse de que la escala no sea 0 antes de dibujar el modelo
+			if (scale.x > 0.0f || scale.y > 0.0f || scale.z > 0.0f) {
+				// **Comenzar a dibujar fi solo cuando la luz esté lista**
+				if (lightReady) {
+					// Aplicar la transformación al modelo
+					glm::mat4 modelq = glm::mat4(1.0f);
+
+					// Si el modelo está en su fase inicial de aparición, lo dibujamos en la posición fija
+					if (animationProgress < 1.0f) {
+						// Animación de aparición con escala de 0 a la escala definida (más lenta)
+						float scaleFactor = glm::mix(0.0f, 1.0f, animationProgress); // De 0 a 1 con el progreso de la animación
+						scale = baseScale * scaleFactor;  // Ajustar la escala del modelo
+
+						// Rebote en Y durante la aparición
+						float bounceHeight = 0.2f * sin(3.0f * glm::pi<float>() * animationProgress); // Rebote en Y
+						modelq = glm::translate(modelq, glm::vec3(-12.2f, 3.5f + bounceHeight, -40.0f));  // Posición fija para la aparición
+					}
+					else {
+						// Después de la aparición, permitir el rebote en X y Z
+						modelq = glm::translate(modelq, position);  // Usamos la posición calculada para el rebote lateral
+					}
+
+					// Rotación mientras el modelo está en movimiento
+					modelq = glm::rotate(modelq, glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+					modelq = glm::scale(modelq, scale);  // Aplicar la escala modificada de manera continua
+
+					// Enviar los datos al shader
+					glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+					glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+					glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelq));
+
+					// Dibujar el modelo
+					fi.Draw(lightingShader);
+				}
+			}
+
+			// Si la escala está en cero, se puede activar la aparición de los otros modelos
+			if (scale.x <= 0.0f && scale.y <= 0.0f && scale.z <= 0.0f && decayTriggered) {
+				othersCanAppear = true;
+			}
+
+			// **Animación de rebote lateral para los modelos después de la aparición**
+			if (othersCanAppear) {
+				// Rebotar y aparecer los modelos ap, fi, td con animación de escala
+				auto applyReboundAndScale = [&lightingShader](Model& model, bool& visible, float& animationProgress, glm::vec3 position) {
+					if (animationProgress < 1.0f) {
+						animationProgress += animationSpeeds * deltaTime;  // Aumentar el progreso de la animación
+					}
+
+					// Aplicar rebote en Y
+					float bounceHeight = 0.2f * sin(8 * glm::pi<float>() * animationProgress); // 4 rebotes
+					glm::mat4 modelTransform = glm::mat4(1.0f);
+					modelTransform = glm::translate(modelTransform, glm::vec3(position.x, position.y + bounceHeight, position.z));
+					modelTransform = glm::scale(modelTransform, glm::vec3(0.1f, 3.5f, 3.5f) * animationProgress); // Escala de aparición
+
+					glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+					glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+					glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelTransform));
+					model.Draw(lightingShader);  // Dibuja el modelo
+					};
+
+				// Dibujo de 'ap'
+				if (apVisible) {
+					applyReboundAndScale(ap, apVisible, apAnimationProgress, glm::vec3(-17.6f, 3.5f, -35.0f));
+				}
+
+				// Dibujo de 'fi'
+				if (fiVisible) {
+					applyReboundAndScale(fi, fiVisible, fiAnimationProgress, glm::vec3(-17.6f, 3.5f, -39.5f));
+				}
+
+				// Dibujo de 'td'
+				if (tdVisible) {
+					applyReboundAndScale(td, tdVisible, tdAnimationProgress, glm::vec3(-17.6f, 3.5f, -45.0f));
+				}
+			}
+		}
+
 
 
 
@@ -2098,12 +2346,30 @@ void DoMovement()
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-		light6AnimationProgress = 0.0f;
-		light6Active = !light6Active; // Alterna el estado de la luz cada vez que se presiona F
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !piVisible && !fiVisible && !tdVisible) {
+		apVisible = true;  // Mostrar el modelo `pi` cuando se presione la tecla G
+		fiVisible = true;
+		tdVisible = true;
 	}
-	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-		light6Active = !light6Active; // Alterna el estado de la luz cada vez que se presiona F
+
+
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+		// Cada vez que presionamos F, restablecemos la posición del modelo 'fi' a su origen
+		position = initialPosition;  // Resetear la posición del modelo 'fi' al origen
+
+		// Activa la animación de escala y la luz puntual
+		modelsVisible = true;  // El modelo debe volverse visible
+		light6Active = true;   // Activa la luz puntual si el modelo está visible
+		drawModelWithF = true; // Hacer visible el modelo 'fi'
+		light6AnimationProgress = 0.0f;  // Reinicia la animación de la luz puntual
+		animationProgress = 0.0f;        // Reinicia la animación de la escala
+
+		// Inicializa el estado de las animaciones
+		modelVisibleAndReady = false;  // El modelo no está listo para la animación de rebote
+		lightReady = false;            // La luz puntual no está lista para la animación de rebote
+		apVisible = true;  // Mostrar el modelo `pi` cuando se presione la tecla G
+		fiVisible = true;
+		tdVisible = true;
 	}
 
 	if (GLFW_KEY_ESCAPE == key && action == GLFW_PRESS)
@@ -2288,7 +2554,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	}
 
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+
 	{
+		light6Active = false;
+		fiVisible = false;
+		tdVisible = false;
+		apVisible = false;
 		// Restaurar visibilidad y escala de modelos principales
 		piVisible = true;
 		nVisible = false;
