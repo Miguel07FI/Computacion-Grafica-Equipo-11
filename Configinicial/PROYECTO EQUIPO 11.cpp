@@ -105,7 +105,7 @@ bool explosionActive = false;
 
 
 float posBallY = 0.0f;  // Posición inicial de la pelota en Y
-float velocidad = 2.0f;  // Velocidad de la animación (puedes ajustarla)
+float velocidad = 1.0f;  // Velocidad de la animación (puedes ajustarla)
 bool moviendoArriba = true;  // Variable para controlar la dirección de la pelota
 // Control de la animación
 bool animacionActivada = false;  // Animación inicialmente desactivada
@@ -735,7 +735,7 @@ float scaleFactor = 1.0f;
 
 
 float scaleTimer = 0.0f;
-float scaleSpeed = 2.0f; // Ajusta la velocidad de pulsación
+float scaleSpeed = 1.0f; // Ajusta la velocidad de pulsación
 float minScaleFactor = 0.4f;
 
 float rotationAngle = 0.0f;
@@ -798,7 +798,7 @@ enum EstadoCaminar {
 
 EstadoCaminar estado = CAMINAR_Z;
 float anguloRotacionMuneco = 180.0f;  // Ya estaba rotado para mirar hacia -Z
-float velocidadRotacion = 2.0f;       // Grados por frame para la rotación
+float velocidadRotacion = 1.0f;       // Grados por frame para la rotación
 
 bool levantarBrazo = false;  // Si el brazo está levantándose
 bool regresarBrazo = false;  // Si el brazo está bajando
@@ -3584,6 +3584,8 @@ void Animation() {
 		// Interpolación de la escala entre 0 y la escala final de la luz 6
 		light6Scale = glm::mix(glm::vec3(0.0f), light6FinalScale, light6AnimationProgress);
 	}
+
+	/////////////////////----------------QUINTA ANIMACION---------------------////////////
 	if (caminar) {
 		float anguloMaxMuslo = 1.5f;
 		float velocidadAnguloMuslo = 0.05f;
