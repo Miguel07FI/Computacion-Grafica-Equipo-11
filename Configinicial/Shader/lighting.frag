@@ -1,6 +1,6 @@
 #version 330 core
 
-#define NUMBER_OF_POINT_LIGHTS 6
+#define NUMBER_OF_POINT_LIGHTS 7
 
 struct Material
 {
@@ -59,6 +59,7 @@ uniform PointLight pointLights[NUMBER_OF_POINT_LIGHTS];
 uniform SpotLight spotLight;
 uniform Material material;
 uniform int transparency;
+
 
 // Function prototypes
 vec3 CalcDirLight( DirLight light, vec3 normal, vec3 viewDir );
@@ -170,4 +171,9 @@ vec3 CalcSpotLight( SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir )
     specular *= attenuation * intensity;
     
     return ( ambient + diffuse + specular );
+
+
 }
+
+
+
