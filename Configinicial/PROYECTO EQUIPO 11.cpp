@@ -755,6 +755,69 @@ bool apVisible = false;  // Bandera para controlar la visibilidad del modelo `pi
 bool fiVisible = false;
 bool tdVisible = false;
 
+
+
+
+//////////////----------------vaeriables para humano--------------------------------//////////////////
+bool caminar = false;  // Para activar/desactivar la animación
+float anguloPiernaDerecha = 0.0f;
+float anguloPiernaIzquierda = 0.0f;
+float anguloBrazoDerecho = 0.0f;
+float anguloBrazoIzquierdo = 0.0f;
+bool piernaAdelante = true;  // Indica dirección del movimiento (adelante o atrás)
+
+float anguloRodillaDer = 0.0f;
+float anguloRodillaIzq = 0.0f;
+float anguloTorso = 0.0f;
+float anguloManoDer = 0.0f;
+float anguloManoIzq = 0.0f;
+
+float anguloRodillaDerecha = 0.0f;
+float anguloRodillaIzquierda = 0.0f;
+float factorBrazo = 0.5f;
+float factorPanto = 0.3f;
+float factorTorso = 1.5f;
+float anguloPiernaInferiorDerecha = 0.0f;
+float anguloPiernaInferiorIzquierda = 0.0f;
+float anguloCabeza = 0.0f;
+float humv = false;
+
+glm::vec3 posicionBaseInicio = glm::vec3(10.4f, -3.9f, -20.0f);
+glm::vec3 posicionBaseFin = glm::vec3(10.4f, -3.9f, -40.0f);
+float posicionZMuneco = -10.0f;  // Comenzar en -10
+float velocidadCaminar = 3.0f;  // Ajusta la velocidad de caminata
+
+enum EstadoCaminar {
+	CAMINAR_Z,
+	ROTAR_IZQUIERDA,
+	CAMINAR_X,
+	ROTAR_180,   // Nuevo estado para giro 180 grados
+	POST_ROTACION,
+	FIN
+};
+
+EstadoCaminar estado = CAMINAR_Z;
+float anguloRotacionMuneco = 180.0f;  // Ya estaba rotado para mirar hacia -Z
+float velocidadRotacion = 2.0f;       // Grados por frame para la rotación
+
+bool levantarBrazo = false;  // Si el brazo está levantándose
+bool regresarBrazo = false;  // Si el brazo está bajando
+
+
+
+float anguloBrazoIzquierdoX = 0.0f;   // Ángulo para levantar brazo en X (hacia arriba)
+
+
+bool levantarBrazoIzq = false;
+bool regresarBrazoIzq = false;
+float anguloBrazoIzqX = 0.0f;
+float velocidadBrazoIzqX = 1.0f;
+
+float anguloRotacion180 = 0.0f;  // Ángulo acumulado para el giro 180°
+float velocidadRotacion180 = 1.0f;  // Velocidad de giro (grados por frame)
+
+
+
 ////////////POSICIONES DE LUCES
 glm::vec3 pointLightPositions[] = {
 	glm::vec3(0.0f, 8.3f, -55.0f),
@@ -913,7 +976,7 @@ int main()
 	Model co((char*)"Models/co/co.obj");
 	Model ex((char*)"Models/ex/ex.obj");
 	Model r((char*)"Models/r/R.obj");
-	Model N((char*)"Models/piN/N.obj");
+	Model N((char*)"Models/piN/n.obj");
 	Model mN((char*)"Models/mN/mN.obj");
 	Model tN((char*)"Models/tN/tN.obj");
 	Model MM((char*)"Models/MM/MM.obj");
@@ -926,6 +989,23 @@ int main()
 	Model fi((char*)"Models/fi/fi.obj");
 	Model ap((char*)"Models/ap/ap.obj");
 	Model td((char*)"Models/td/td.obj");
+
+	// Modelos para cargar
+	Model pie_der((char*)"Models/e/pie_der.obj");
+	Model panto_der((char*)"Models/e/panto_der.obj");
+	Model panto_izq((char*)"Models/e/panto_izq.obj");
+	Model muslo_izq((char*)"Models/e/muslo_izq.obj");
+	Model muslo_der((char*)"Models/e/muslo_der.obj");
+	Model mano_izq((char*)"Models/e/mano_izq.obj");
+	Model hombro_izq((char*)"Models/e/hombro_izq.obj");
+	Model torso((char*)"Models/e/torso.obj");
+	Model ante_der((char*)"Models/e/ante_der.obj");
+	Model ante_izq((char*)"Models/e/ante_izq.obj");
+	Model pie_izq((char*)"Models/e/pie_izq.obj");
+	Model cadera((char*)"Models/e/cadera.obj");
+	Model cabeza((char*)"Models/e/cabeza.obj");
+	Model hombro_der((char*)"Models/e/hombro_der.obj");
+	Model mano_der((char*)"Models/e/mano_der.obj");
 
 
 
@@ -2112,7 +2192,185 @@ int main()
 		}
 
 
+		if (humv) {
 
+			glm::vec3 posicionBase;
+
+			// Definir posición base según estado
+			if (estado == CAMINAR_Z || estado == ROTAR_IZQUIERDA) {
+				posicionBase = glm::vec3(posicionBaseInicio.x, -3.9f, posicionZMuneco);
+			}
+			else if (estado == CAMINAR_X) {
+				posicionBase = glm::vec3(posicionBaseInicio.x, -3.9f, -40.0f);
+			}
+			else if (estado == ROTAR_180 || estado == POST_ROTACION) {
+				// Punto fijo para giro y posición final
+				posicionBase = glm::vec3(-1.0f, -3.9f, -40.0f);
+			}
+			else if (estado == FIN) {
+				posicionBase = glm::vec3(posicionBaseInicio.x, -3.9f, -40.0f);
+			}
+
+			glm::mat4 modelRoot = glm::translate(glm::mat4(1.0f), posicionBase);
+
+			// Ángulo total en Y para rotación (suma de giro general y giro 180°)
+			float anguloTotalY = anguloRotacionMuneco + anguloRotacion180;
+			modelRoot = glm::rotate(modelRoot, glm::radians(anguloTotalY), glm::vec3(0, 1, 0));
+			modelRoot = glm::scale(modelRoot, glm::vec3(5.0f, 5.0f, 5.0f));
+
+			if (estado == POST_ROTACION) {
+				// Dibujar cuerpo y extremidades con rotación 0 (quietos), posición y escala fijas
+
+				// Pierna derecha
+				glm::mat4 modelMusloDer = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMusloDer));
+				muslo_der.Draw(lightingShader);
+
+				glm::mat4 modelPantoDer = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPantoDer));
+				panto_der.Draw(lightingShader);
+
+				glm::mat4 modelPieDer = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPieDer));
+				pie_der.Draw(lightingShader);
+
+				// Pierna izquierda
+				glm::mat4 modelMusloIzq = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMusloIzq));
+				muslo_izq.Draw(lightingShader);
+
+				glm::mat4 modelPantoIzq = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPantoIzq));
+				panto_izq.Draw(lightingShader);
+
+				glm::mat4 modelPieIzq = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPieIzq));
+				pie_izq.Draw(lightingShader);
+
+				// Brazo derecho
+				glm::mat4 modelHombroDer = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelHombroDer));
+				hombro_der.Draw(lightingShader);
+
+				glm::mat4 modelAnteDer = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelAnteDer));
+				ante_der.Draw(lightingShader);
+
+				glm::mat4 modelManoDer = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelManoDer));
+				mano_der.Draw(lightingShader);
+
+				// Brazo izquierdo
+				glm::mat4 modelHombroIzq = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelHombroIzq));
+				hombro_izq.Draw(lightingShader);
+
+				glm::mat4 modelAnteIzq = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelAnteIzq));
+				ante_izq.Draw(lightingShader);
+
+				glm::mat4 modelManoIzq = glm::rotate(modelRoot, glm::radians(0.0f), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelManoIzq));
+				mano_izq.Draw(lightingShader);
+
+				// Cadera
+				glm::mat4 modelCadera = glm::translate(modelRoot, glm::vec3(0.0f));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelCadera));
+				cadera.Draw(lightingShader);
+
+				// Torso
+				glm::mat4 modelTorso = glm::translate(modelRoot, glm::vec3(0.0f));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelTorso));
+				torso.Draw(lightingShader);
+
+				// Cabeza con movimiento lateral
+				glm::mat4 modelCabeza = glm::translate(modelRoot, glm::vec3(0.0f));
+				modelCabeza = glm::rotate(modelCabeza, glm::radians(anguloCabeza), glm::vec3(0, 1, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelCabeza));
+				cabeza.Draw(lightingShader);
+
+			}
+			else {
+				// En cualquier otro estado, dibujamos todo normalmente
+
+				// Pierna derecha
+				glm::mat4 modelMusloDer = glm::rotate(modelRoot, glm::radians(anguloPiernaDerecha), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMusloDer));
+				muslo_der.Draw(lightingShader);
+
+				glm::mat4 modelPantoDer = glm::rotate(modelRoot, glm::radians(anguloPiernaInferiorDerecha), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPantoDer));
+				panto_der.Draw(lightingShader);
+
+				glm::mat4 modelPieDer = glm::rotate(modelRoot, glm::radians(anguloPiernaInferiorDerecha), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPieDer));
+				pie_der.Draw(lightingShader);
+
+				// Pierna izquierda
+				glm::mat4 modelMusloIzq = glm::rotate(modelRoot, glm::radians(anguloPiernaIzquierda), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMusloIzq));
+				muslo_izq.Draw(lightingShader);
+
+				glm::mat4 modelPantoIzq = glm::rotate(modelRoot, glm::radians(anguloPiernaInferiorIzquierda), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPantoIzq));
+				panto_izq.Draw(lightingShader);
+
+				glm::mat4 modelPieIzq = glm::rotate(modelRoot, glm::radians(anguloPiernaInferiorIzquierda), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelPieIzq));
+				pie_izq.Draw(lightingShader);
+
+				// Brazo derecho
+				glm::mat4 modelHombroDer = glm::rotate(modelRoot, glm::radians(anguloBrazoDerecho), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelHombroDer));
+				hombro_der.Draw(lightingShader);
+
+				glm::mat4 modelAnteDer = glm::rotate(modelRoot, glm::radians(anguloBrazoDerecho), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelAnteDer));
+				ante_der.Draw(lightingShader);
+
+				glm::mat4 modelManoDer = glm::rotate(modelRoot, glm::radians(anguloManoDer), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelManoDer));
+				mano_der.Draw(lightingShader);
+
+				// Brazo izquierdo
+				glm::mat4 modelHombroIzq = glm::rotate(modelRoot, glm::radians(anguloBrazoIzquierdo), glm::vec3(1, 0, 0));
+				modelHombroIzq = glm::rotate(modelHombroIzq, glm::radians(anguloBrazoIzqX), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelHombroIzq));
+				hombro_izq.Draw(lightingShader);
+
+				glm::mat4 modelAnteIzq = glm::rotate(modelRoot, glm::radians(anguloBrazoIzquierdo), glm::vec3(1, 0, 0));
+				modelAnteIzq = glm::rotate(modelAnteIzq, glm::radians(anguloBrazoIzqX), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelAnteIzq));
+				ante_izq.Draw(lightingShader);
+
+				glm::mat4 modelManoIzq = glm::rotate(modelRoot, glm::radians(anguloManoIzq), glm::vec3(1, 0, 0));
+				modelManoIzq = glm::rotate(modelManoIzq, glm::radians(anguloBrazoIzqX), glm::vec3(1, 0, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelManoIzq));
+				mano_izq.Draw(lightingShader);
+
+				// Cadera con balanceo
+				glm::mat4 modelCadera = glm::translate(modelRoot, glm::vec3(0.0f));
+				float anguloCadera = sin(glm::radians(posicionZMuneco * 30)) * 5.0f;
+				modelCadera = glm::rotate(modelCadera, glm::radians(anguloCadera), glm::vec3(0, 1, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelCadera));
+				cadera.Draw(lightingShader);
+
+				// Torso con balanceo suave
+				glm::mat4 modelTorso = glm::translate(modelRoot, glm::vec3(0.0f));
+				modelTorso = glm::rotate(modelTorso, glm::radians(anguloTorso), glm::vec3(0, 1, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelTorso));
+				torso.Draw(lightingShader);
+
+				// Cabeza con movimiento lateral
+				glm::mat4 modelCabeza = glm::translate(modelRoot, glm::vec3(0.0f));
+				modelCabeza = glm::rotate(modelCabeza, glm::radians(anguloCabeza), glm::vec3(0, 1, 0));
+				glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelCabeza));
+				cabeza.Draw(lightingShader);
+			}
+		}
+
+		
+		
 
 
 
@@ -2346,6 +2604,12 @@ void DoMovement()
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
+
+	if (key == GLFW_KEY_H && action == GLFW_PRESS)
+	{
+		humv = true;
+		caminar = !caminar; // Cambia estado de animación
+	}
 	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !piVisible && !fiVisible && !tdVisible) {
 		apVisible = true;  // Mostrar el modelo `pi` cuando se presione la tecla G
 		fiVisible = true;
@@ -2556,6 +2820,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 
 	{
+		humv = false;
 		light6Active = false;
 		fiVisible = false;
 		tdVisible = false;
@@ -3319,8 +3584,161 @@ void Animation() {
 		// Interpolación de la escala entre 0 y la escala final de la luz 6
 		light6Scale = glm::mix(glm::vec3(0.0f), light6FinalScale, light6AnimationProgress);
 	}
+	if (caminar) {
+		float anguloMaxMuslo = 1.5f;
+		float velocidadAnguloMuslo = 0.05f;
 
+		float anguloMaxInferior = 2.5f;
+		float velocidadAnguloInferior = 0.1f;
 
+		float velocidadRotacion = 2.0f; // grados por frame
+		float velocidadCaminarZ = 0.05f; // velocidad para caminar en Z
+		float velocidadCaminarX = 0.05f; // velocidad para caminar en X
+
+		if (estado == FIN) {
+			// Sólo mueve la cabeza (balanceo lateral)
+			anguloCabeza = sin(glfwGetTime() * 3.0f) * 90.0f;
+
+			// Piernas, brazos, torso quietos
+			anguloPiernaDerecha = 0.0f;
+			anguloPiernaIzquierda = 0.0f;
+			anguloPiernaInferiorDerecha = 0.0f;
+			anguloPiernaInferiorIzquierda = 0.0f;
+			anguloBrazoDerecho = 0.0f;
+			anguloBrazoIzquierdo = 0.0f;
+			anguloTorso = 0.0f;
+		}
+		else if (estado == ROTAR_180) {
+			// Solo avanzamos el giro 180°, no se mueven otras partes
+			anguloRotacion180 += velocidadRotacion180;
+			if (anguloRotacion180 >= 180.0f) {
+				anguloRotacion180 = 180.0f;
+				estado = POST_ROTACION;  // Cambiamos al nuevo estado
+			}
+
+			// Mueve sólo la cabeza en ROTAR_180 para dar continuidad
+			anguloCabeza = sin(glfwGetTime() * 3.0f) * 10.0f;
+
+			// Piernas, brazos, torso quietos
+			anguloPiernaDerecha = 0.0f;
+			anguloPiernaIzquierda = 0.0f;
+			anguloPiernaInferiorDerecha = 0.0f;
+			anguloPiernaInferiorIzquierda = 0.0f;
+			anguloBrazoDerecho = 0.0f;
+			anguloBrazoIzquierdo = 0.0f;
+			anguloTorso = 0.0f;
+		}
+		else if (estado == POST_ROTACION) {
+			// Sólo balanceo lateral de cabeza
+			anguloCabeza = sin(glfwGetTime() * 3.0f) * 15.0f;
+
+			// Piernas, brazos, torso quietos
+			anguloPiernaDerecha = 0.0f;
+			anguloPiernaIzquierda = 0.0f;
+			anguloPiernaInferiorDerecha = 0.0f;
+			anguloPiernaInferiorIzquierda = 0.0f;
+			anguloBrazoDerecho = 0.0f;
+			anguloBrazoIzquierdo = 0.0f;
+			anguloTorso = 0.0f;
+
+			// Aquí puedes agregar transición a otro estado si quieres reiniciar la animación
+		}
+		else {
+			// Movimiento normal de caminar
+
+			// Movimiento de cabeza balanceo lateral
+			anguloCabeza = sin(glfwGetTime() * 3.0f) * 10.0f;
+
+			if (piernaAdelante) {
+				anguloPiernaDerecha += velocidadAnguloMuslo;
+				anguloPiernaIzquierda -= velocidadAnguloMuslo;
+
+				anguloPiernaInferiorDerecha = std::max(anguloPiernaInferiorDerecha - velocidadAnguloInferior, -anguloMaxInferior);
+				anguloPiernaInferiorIzquierda = std::min(anguloPiernaInferiorIzquierda + velocidadAnguloInferior, 0.0f);
+
+				anguloBrazoDerecho -= velocidadAnguloMuslo;
+				anguloBrazoIzquierdo += velocidadAnguloMuslo;
+
+				anguloRodillaDerecha = std::min(anguloRodillaDerecha + 0.02f, anguloMaxInferior);
+				anguloRodillaIzquierda = std::max(anguloRodillaIzquierda - 0.02f, -anguloMaxInferior);
+
+				anguloManoDer = anguloBrazoDerecho * 0.8f;
+				anguloManoIzq = anguloBrazoIzquierdo * 0.8f;
+
+				anguloTorso = anguloBrazoDerecho * factorTorso;
+
+				if (anguloPiernaDerecha >= anguloMaxMuslo) {
+					piernaAdelante = false;
+				}
+			}
+			else {
+				anguloPiernaDerecha -= velocidadAnguloMuslo;
+				anguloPiernaIzquierda += velocidadAnguloMuslo;
+
+				anguloPiernaInferiorDerecha = std::min(anguloPiernaInferiorDerecha + velocidadAnguloInferior, 0.0f);
+				anguloPiernaInferiorIzquierda = std::max(anguloPiernaInferiorIzquierda - velocidadAnguloInferior, -anguloMaxInferior);
+
+				anguloBrazoDerecho += velocidadAnguloMuslo;
+				anguloBrazoIzquierdo -= velocidadAnguloMuslo;
+
+				anguloRodillaDerecha = std::max(anguloRodillaDerecha - 0.02f, -anguloMaxInferior);
+				anguloRodillaIzquierda = std::min(anguloRodillaIzquierda + 0.02f, anguloMaxInferior);
+
+				anguloManoDer = anguloBrazoDerecho * 0.8f;
+				anguloManoIzq = anguloBrazoIzquierdo * 0.8f;
+
+				anguloTorso = anguloBrazoDerecho * factorTorso;
+
+				if (anguloPiernaDerecha <= -anguloMaxMuslo) {
+					piernaAdelante = true;
+				}
+			}
+		}
+
+		// Manejo de estados y posiciones
+		switch (estado) {
+		case CAMINAR_Z:
+			posicionZMuneco -= velocidadCaminarZ;
+			if (posicionZMuneco <= -40.0f) {
+				posicionZMuneco = -40.0f;
+				estado = ROTAR_IZQUIERDA;
+			}
+			break;
+
+		case ROTAR_IZQUIERDA:
+			anguloRotacionMuneco -= velocidadRotacion;
+			if (anguloRotacionMuneco <= 270.0f) {
+				anguloRotacionMuneco = 270.0f;
+				estado = CAMINAR_X;
+			}
+			break;
+
+		case CAMINAR_X:
+			posicionBaseInicio.x -= velocidadCaminarX;
+			if (posicionBaseInicio.x <= -1.0f) {
+				posicionBaseInicio.x = -1.0f;
+				estado = ROTAR_180;
+			}
+			break;
+
+		case ROTAR_180:
+			// El avance del giro lo manejamos arriba en el if para poder cambiar el estado
+			break;
+
+		case POST_ROTACION:
+			// Aquí no hacemos nada con la posición, solo se queda estático y la cabeza mueve.
+			break;
+
+		case FIN:
+			// Reiniciar para repetir la animación
+			posicionZMuneco = -20.0f;
+			posicionBaseInicio.x = 10.4f;
+			anguloRotacionMuneco = 180.0f;
+			anguloRotacion180 = 0.0f;
+			estado = CAMINAR_Z;
+			break;
+		}
+	}
 }
 
 
