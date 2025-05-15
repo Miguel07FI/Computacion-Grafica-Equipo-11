@@ -717,11 +717,6 @@ float animationProgress = 0.0f;
 float animationSpeed = 0.005f;
 bool modelVisibleAndReady = false;
 
-<<<<<<< Updated upstream
-=======
-///////////////////////--------------------LIMITES----------------////////////////////////
-
->>>>>>> Stashed changes
 glm::vec3 minPoint(-12.6f, 0.5f, -46.5f);
 glm::vec3 maxPoint(-12.6f, 6.5f, -33.5f);
 
@@ -761,7 +756,6 @@ bool fiVisible = false;
 bool tdVisible = false;
 
 
-<<<<<<< Updated upstream
 
 
 //////////////----------------vaeriables para humano--------------------------------//////////////////
@@ -823,18 +817,6 @@ float anguloRotacion180 = 0.0f;  // Ángulo acumulado para el giro 180°
 float velocidadRotacion180 = 1.0f;  // Velocidad de giro (grados por frame)
 
 
-=======
-////////////-----------------ANIMACION DE HUMANO-----------------/////////////
-// Variables de animación
-bool humanVisible = false;
-bool startWalking = false;
-bool hPressed = false;
-float walkZ = -10.0f;
-float walkSpeed = 5.0f; // unidades por segundo
-
-// Para cálculo de deltaTime
-float lastTime = glfwGetTime();
->>>>>>> Stashed changes
 
 ////////////POSICIONES DE LUCES
 glm::vec3 pointLightPositions[] = {
@@ -1008,11 +990,7 @@ int main()
 	Model ap((char*)"Models/ap/ap.obj");
 	Model td((char*)"Models/td/td.obj");
 
-<<<<<<< Updated upstream
 	// Modelos para cargar
-=======
-	// Carga de modelos del humano
->>>>>>> Stashed changes
 	Model pie_der((char*)"Models/e/pie_der.obj");
 	Model panto_der((char*)"Models/e/panto_der.obj");
 	Model panto_izq((char*)"Models/e/panto_izq.obj");
@@ -1157,11 +1135,71 @@ int main()
 	glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
 
 
+	//////////////----------------DIBUJOS DE SILLAS Y PC'S---------------------////////////////
+
+	// Agregar instancia inicial con GA visible
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -25.8f));
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -30.3f));
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -34.8f));
+
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -25.8f));
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -30.3f));
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -34.8f));
+
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -25.8f));
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -30.3f));
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -34.8f));
+
+
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -48.5f));
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -56.5f));
+	animaciones.emplace_back(glm::vec3(3.5f, 0.5f, -52.5f));
+
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -48.5f));
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -56.5f));
+	animaciones.emplace_back(glm::vec3(-3.5f, 0.5f, -52.5f));
+
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -48.5f));
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -56.5f));
+	animaciones.emplace_back(glm::vec3(-10.5f, 0.5f, -52.5f));
+
+	// Nuevas instancias sin cambio de posición o escala (solo animación en el lugar)
+	animaciones.emplace_back(glm::vec3(4.0f, -2.3f, -57.0f), true);
+	animaciones.emplace_back(glm::vec3(-3.0f, -2.3f, -57.0f), true);
+	animaciones.emplace_back(glm::vec3(-10.0f, -2.3f, -57.0f), true);
+
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -28.0f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -23.0f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -33.0f));
+
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -28.0f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -23.0f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -33.0f));
+
+	sillas.emplace_back(glm::vec3(-6.2f, -1.5f, -28.0f));
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -23.0f));
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -33.0f));
+
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -58.5f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -54.5f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -50.5f));
+	sillas.emplace_back(glm::vec3(7.0f, -1.5f, -46.5f));
+
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -58.5f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -54.5f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -50.5f));
+	sillas.emplace_back(glm::vec3(0.0f, -1.5f, -46.5f));
+
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -58.5f));
+	sillas.emplace_back(glm::vec3(-6.5f, -1.5f, -54.5f));
+	sillas.emplace_back(glm::vec3(-7.5f, -1.5f, -50.5f));
+	sillas.emplace_back(glm::vec3(-6.5f, -1.5f, -46.5f));
 
 
 
 
-	
+
+	// Game loop
 	while (!glfwWindowShouldClose(window))
 	{
 
@@ -1304,35 +1342,10 @@ int main()
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
 
 
-<<<<<<< Updated upstream
 
 		/////////--------------DIBUJO DE MODELOS--------------//////////////////
-=======
-		
-		if (humanVisible) {
-			glm::vec3 basePos = glm::vec3(10.0f, 1.0f, walkZ);
-			glm::vec3 scale = glm::vec3(0.5f); // Ajusta si tus modelos están muy grandes
->>>>>>> Stashed changes
 
-			std::vector<std::pair<Model&, glm::vec3>> partes = {
-				{cadera,        glm::vec3(0.0f, 0.0f, 0.0f)},
-				{torso,         glm::vec3(0.0f, 1.0f, 0.0f)},
-				{cabeza,        glm::vec3(0.0f, 2.0f, 0.0f)},
-				{muslo_der,     glm::vec3(-0.3f, -1.0f, 0.0f)},
-				{muslo_izq,     glm::vec3(0.3f, -1.0f, 0.0f)},
-				{panto_der,     glm::vec3(-0.3f, -2.0f, 0.0f)},
-				{panto_izq,     glm::vec3(0.3f, -2.0f, 0.0f)},
-				{pie_der,       glm::vec3(-0.3f, -2.8f, 0.1f)},
-				{pie_izq,       glm::vec3(0.3f, -2.8f, 0.1f)},
-				{hombro_der,    glm::vec3(-0.5f, 1.5f, 0.0f)},
-				{hombro_izq,    glm::vec3(0.5f, 1.5f, 0.0f)},
-				{ante_der,      glm::vec3(-0.5f, 0.7f, 0.0f)},
-				{ante_izq,      glm::vec3(0.5f, 0.7f, 0.0f)},
-				{mano_der,      glm::vec3(-0.5f, 0.2f, 0.0f)},
-				{mano_izq,      glm::vec3(0.5f, 0.2f, 0.0f)}
-			};
 
-<<<<<<< Updated upstream
 /////////--------------------PANTALLAS----------//////////////
 
 		for (const auto& pos : posicionesPantallas)
@@ -1388,46 +1401,19 @@ int main()
 			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSalon));
 
 			sal.Draw(lightingShader);
-=======
-			for (auto& parte : partes) {
-				glm::mat4 model = glm::mat4(1.0f);
-				model = glm::translate(model, basePos + parte.second);
-				model = glm::scale(model, scale);
-				glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-				parte.first.Draw(lightingShader);
-			}
->>>>>>> Stashed changes
 		}
+		else if (modeloSalonNuevoVisible)
+		{
+			glm::mat4 modelSalon = glm::mat4(1.0f);
+			modelSalon = glm::translate(modelSalon, glm::vec3(0.0f, -4.0f, -40.0f));
+			modelSalon = glm::rotate(modelSalon, glm::radians(360.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+			modelSalon = glm::scale(modelSalon, glm::vec3(1.0f));
+			glUniform1f(glGetUniformLocation(lightingShader.Program, "explosionFactor"), 0.0f);
+			glUniform1i(glGetUniformLocation(lightingShader.Program, "transparency"), 0);
+			glUniformMatrix4fv(glGetUniformLocation(lightingShader.Program, "model"), 1, GL_FALSE, glm::value_ptr(modelSalon));
 
-		
-
-		
-
-		
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+			SAN.Draw(lightingShader);
+		}
 
 
 		// ------------------ CORTINAS VIEJAS (modelos co) ------------------
@@ -2383,8 +2369,8 @@ int main()
 			}
 		}
 
-		
-		
+
+
 
 
 
@@ -2618,11 +2604,6 @@ void DoMovement()
 
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS && !piVisible && !fiVisible && !tdVisible) {
-		apVisible = true;  // Mostrar el modelo `pi` cuando se presione la tecla G
-		fiVisible = true;
-		tdVisible = true;
-	}
 
 	if (key == GLFW_KEY_H && action == GLFW_PRESS)
 	{
@@ -2635,25 +2616,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 		tdVisible = true;
 	}
 
-
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-		// Cada vez que presionamos F, restablecemos la posición del modelo 'fi' a su origen
-		position = initialPosition;  // Resetear la posición del modelo 'fi' al origen
-
-		// Activa la animación de escala y la luz puntual
-		modelsVisible = true;  // El modelo debe volverse visible
-		light6Active = true;   // Activa la luz puntual si el modelo está visible
-		drawModelWithF = true; // Hacer visible el modelo 'fi'
-		light6AnimationProgress = 0.0f;  // Reinicia la animación de la luz puntual
-		animationProgress = 0.0f;        // Reinicia la animación de la escala
-
-		// Inicializa el estado de las animaciones
-		modelVisibleAndReady = false;  // El modelo no está listo para la animación de rebote
-		lightReady = false;            // La luz puntual no está lista para la animación de rebote
-		apVisible = true;  // Mostrar el modelo `pi` cuando se presione la tecla G
-		fiVisible = true;
-		tdVisible = true;
-	}
 
 	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
 		// Cada vez que presionamos F, restablecemos la posición del modelo 'fi' a su origen
@@ -2858,10 +2820,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 
 	{
-<<<<<<< Updated upstream
 		humv = false;
-=======
->>>>>>> Stashed changes
 		light6Active = false;
 		fiVisible = false;
 		tdVisible = false;
@@ -3625,24 +3584,12 @@ void Animation() {
 		// Interpolación de la escala entre 0 y la escala final de la luz 6
 		light6Scale = glm::mix(glm::vec3(0.0f), light6FinalScale, light6AnimationProgress);
 	}
-<<<<<<< Updated upstream
 	if (caminar) {
 		float anguloMaxMuslo = 1.5f;
 		float velocidadAnguloMuslo = 0.05f;
 
 		float anguloMaxInferior = 2.5f;
 		float velocidadAnguloInferior = 0.1f;
-=======
-	// ANIMACIÓN DEL HUMANO CAMINANDO
-	if (startWalking && walkZ > -40.0f) {
-		walkZ -= deltaTime * walkSpeed;
-
-		if (walkZ <= -40.0f) {
-			walkZ = -40.0f;
-			startWalking = false;
-		}
-	}
->>>>>>> Stashed changes
 
 		float velocidadRotacion = 2.0f; // grados por frame
 		float velocidadCaminarZ = 0.05f; // velocidad para caminar en Z
